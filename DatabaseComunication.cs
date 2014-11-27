@@ -37,11 +37,11 @@ namespace ChatTwo_Server
             // Create the SqlConnection object using the saved IP address from settings.
             _conn = new MySqlConnection(_connectionString.Replace("@IP", ip));
 
-            // Start the thread.
-            _online = true;
-            _threadStatusIntervalUpdate = new Thread(new ThreadStart(StatusIntervalUpdate));
-            _threadStatusIntervalUpdate.Name = "StatusIntervalUpdate Thread (StatusIntervalUpdate method)";
-            _threadStatusIntervalUpdate.Start();
+            //// Start the thread.
+            //_online = true;
+            //_threadStatusIntervalUpdate = new Thread(new ThreadStart(StatusIntervalUpdate));
+            //_threadStatusIntervalUpdate.Name = "StatusIntervalUpdate Thread (StatusIntervalUpdate method)";
+            //_threadStatusIntervalUpdate.Start();
         }
 
         /// <summary>
@@ -68,6 +68,7 @@ namespace ChatTwo_Server
                 _conn.Close();
         }
 
+        #region Testing
         public enum ConnectionTestResult
         {
             UnknownError,
@@ -90,73 +91,290 @@ namespace ChatTwo_Server
             const int timeout = 5;
 
             // Test1: Test connection to the server using the IP address from the settings. Add "Connection Timeout" (even though it seem not to work).
-            MySqlConnection conTest = new MySqlConnection(_connectionString.Replace("@IP", ip).Replace("Database=ChatTwo;","") + ";Connection Timeout=" + timeout.ToString());
-
-            // Test2: Test access to the database.
-            MySqlCommand test2 = new MySqlCommand("USE `ChatTwo`;", conTest);
-            test2.CommandTimeout = timeout;
-
-            // Test3: Test access to the `Contacts` table and the `Users` table..
-            MySqlCommand test3 = new MySqlCommand("SELECT 1 FROM `ChatTwo`.`ServerStatus`;", conTest);
-            test3.CommandTimeout = timeout;
-            int version = -1;
-
-            // Test3: Test access to the `Contacts` table and the `Users` table..
-            MySqlCommand test4 = new MySqlCommand("SELECT * FROM `ChatTwo`.`Contacts` WHERE 0 = 1;SELECT * FROM `ChatTwo`.`Users` WHERE 0 = 1;", conTest);
-            test4.CommandTimeout = timeout;
-
-            // Run all tests.
-            try
+            using (MySqlConnection conTest = new MySqlConnection(_connectionString.Replace("@IP", ip).Replace("Database=ChatTwo;", "") + ";Connection Timeout=" + timeout.ToString()))
             {
-                conTest.Open();
-                test2.ExecuteNonQuery();
-                MySqlDataReader reader = test3.ExecuteReader(); 
-                if (reader.Read())
+                // Test2: Test access to the database.
+                MySqlCommand test2 = new MySqlCommand("USE `ChatTwo`;", conTest);
+                test2.CommandTimeout = timeout;
+
+                // Test3: Test access to the `Contacts` table and the `Users` table..
+                MySqlCommand test3 = new MySqlCommand("SELECT * FROM `ChatTwo`.`Contacts` WHERE 0 = 1;SELECT * FROM `ChatTwo`.`Users` WHERE 0 = 1;", conTest);
+                test3.CommandTimeout = timeout;
+
+                // Test4: Test access to the `ServerStatus` table and get the version number.
+                MySqlCommand test4 = new MySqlCommand("SELECT `Version` FROM `ChatTwo`.`ServerStatus`;", conTest);
+                test4.CommandTimeout = timeout;
+                int version = -1;
+
+                // Run all tests.
+                try
                 {
-                    version = (int)reader["Version"];
+                    conTest.Open();
+                    test2.ExecuteNonQuery();
+                    test3.ExecuteNonQuery();
+                    MySqlDataReader reader = test4.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        version = (int)reader["Version"];
+                    }
                 }
-                test4.ExecuteNonQuery();
-            }
-            catch (MySqlException ex)
-            {
-                // If one of the tests fail, return an error message.
-                switch (ex.Number)
-                { // http://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html#error_er_dup_entry_with_key_name
-                    case 0:
-                        // SQL query timed out
-                        return ConnectionTestResult.NoConnection;
-                    case 1042:
-                        // (ER_BAD_HOST_ERROR) Message: Can't get hostname for your address
-                        return ConnectionTestResult.NoConnection;
-                    //case ????:
-                    //    // Permission failed for user
-                    //    return ConnectionTestResult.NoPermission;
-                    case 1049:
-                        // (ER_BAD_DB_ERROR) Message: Unknown database '%s'
-                        return ConnectionTestResult.MissingDatabase;
-                    case 1146:
-                        // (ER_NO_SUCH_TABLE) Message: Table '%s.%s' doesn't exist
-                        return ConnectionTestResult.MissingTable;
-                    default:
-                        // Unknown SQL error
-                        return ConnectionTestResult.UnknownError;
+                catch (MySqlException ex)
+                {
+                    // If one of the tests fail, return an error message.
+                    switch (ex.Number)
+                    { // http://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
+                        case 0:
+                            // SQL query timed out
+                            return ConnectionTestResult.NoConnection;
+                        case 1042:
+                            // (ER_BAD_HOST_ERROR) Message: Can't get hostname for your address
+                            return ConnectionTestResult.NoConnection;
+                        //case ????:
+                        //    // Permission failed for user
+                        //    return ConnectionTestResult.NoPermission;
+                        case 1049:
+                            // (ER_BAD_DB_ERROR) Message: Unknown database '%s'
+                            return ConnectionTestResult.MissingDatabase;
+                        case 1146:
+                            // (ER_NO_SUCH_TABLE) Message: Table '%s.%s' doesn't exist
+                            return ConnectionTestResult.MissingTable;
+                        default:
+                            // Unknown SQL error
+                            return ConnectionTestResult.UnknownError;
+                    }
                 }
-            }
-            finally
-            {
-                if (conTest.State != System.Data.ConnectionState.Closed)
-                    conTest.Close();
-            }
+                finally
+                {
+                    if (conTest.State != System.Data.ConnectionState.Closed)
+                        conTest.Close();
+                }
             
-            // If the version is old, suggest an update.
-            if (version < 0)
-                return ConnectionTestResult.OutDated;
+                // If the version is old, suggest an update.
+                if (version < 0)
+                    return ConnectionTestResult.OutDated;
+            }
 
             // If nothing bad happens, tell the user the program is ready.
             //return "Ready";
             return ConnectionTestResult.Ready;
         }
+        #endregion
 
+        #region Creating and updating database
+        /// <summary>
+        /// Create the whole database from scratch.
+        /// </summary>
+        public static bool CreateDatabase(string ip)
+        {
+            bool cmdResult = true;
+            using (MySqlCommand cmd = new MySqlCommand(
+                "CREATE DATABASE IF NOT EXISTS `ChatTwo`;" + Environment.NewLine +
+                "USE `ChatTwo`;" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE TABLE IF NOT EXISTS `ServerStatus` ( " + Environment.NewLine +
+                "    `Version` INT NOT NULL," + Environment.NewLine +
+                "    `CreationDate` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," + Environment.NewLine +
+                "    `LastUpdated` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" + Environment.NewLine +
+                "    );" + Environment.NewLine +
+                "INSERT INTO `ServerStatus` (`Version`) VALUES(0);" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE TABLE IF NOT EXISTS `Users` (" + Environment.NewLine +
+                "    `ID` INT NOT NULL PRIMARY KEY AUTO_INCREMENT," + Environment.NewLine +
+                "    `Name` VARCHAR(30) NOT NULL UNIQUE," + Environment.NewLine +
+                "    `Password` VARCHAR(30) NOT NULL," + Environment.NewLine +
+                "    `Online` TINYINT(1) NOT NULL DEFAULT 0," + Environment.NewLine +
+                "    `Socket` VARCHAR(51) NULL," + Environment.NewLine +
+                "    `LastOnline` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," + Environment.NewLine +
+                "    `Registered` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" + Environment.NewLine +
+                "    );" + Environment.NewLine +
+                "CREATE TABLE IF NOT EXISTS `Contacts` (" + Environment.NewLine +
+                "    `ID_1` INT NOT NULL," + Environment.NewLine +
+                "    `ID_2` INT NOT NULL," + Environment.NewLine +
+                "    `1To2` TINYINT(1) NOT NULL DEFAULT 0," + Environment.NewLine +
+                "    `2To1` TINYINT(1) NOT NULL DEFAULT 0" + Environment.NewLine +
+                "    );" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "DROP TRIGGER IF EXISTS `trig_UserInsert`;" + Environment.NewLine +
+                "DROP TRIGGER IF EXISTS `trig_UserDeleted`;" + Environment.NewLine +
+                "DROP PROCEDURE IF EXISTS `StatusUpdate`;" + Environment.NewLine +
+                "DROP PROCEDURE IF EXISTS `StatusIntervalUpdate`;" + Environment.NewLine +
+                "DROP PROCEDURE IF EXISTS `ContactsMutual`;" + Environment.NewLine +
+                "DROP PROCEDURE IF EXISTS `ContactsALL`;" + Environment.NewLine +
+                "DROP PROCEDURE IF EXISTS `ContactsAdd`;" + Environment.NewLine +
+                "DROP PROCEDURE IF EXISTS `ContactsRemove`;" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "DELIMITER $$" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE TRIGGER `trig_UserInsert`" + Environment.NewLine +
+                "    BEFORE INSERT ON `users`" + Environment.NewLine +
+                "    FOR EACH ROW" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    DELETE FROM `Contacts`" + Environment.NewLine +
+                "        WHERE `ID_1` = NEW.ID" + Environment.NewLine +
+                "           OR `ID_2` = NEW.ID;" + Environment.NewLine +
+                "END $$" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE TRIGGER `trig_UserDeleted`" + Environment.NewLine +
+                "    BEFORE DELETE ON `users`" + Environment.NewLine +
+                "    FOR EACH ROW" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    DELETE FROM `Contacts`" + Environment.NewLine +
+                "        WHERE `ID_1` = OLD.ID" + Environment.NewLine +
+                "           OR `ID_2` = OLD.ID;" + Environment.NewLine +
+                "END $$" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE DEFINER=`root`@`localhost` PROCEDURE `StatusUpdate`(" + Environment.NewLine +
+                "    IN p_ID INT," + Environment.NewLine +
+                "    IN p_Socket VARCHAR(51)" + Environment.NewLine +
+                ")" + Environment.NewLine +
+                "    MODIFIES SQL DATA" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    UPDATE `Users`" + Environment.NewLine +
+                "        SET `Online` = 1," + Environment.NewLine +
+                "            `Socket` = p_Socket," + Environment.NewLine +
+                "            `LastOnline` = CURRENT_TIMESTAMP" + Environment.NewLine +
+                "        WHERE `ID` = p_ID;" + Environment.NewLine +
+                "END $$" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE DEFINER=`root`@`localhost` PROCEDURE `StatusIntervalUpdate`()" + Environment.NewLine +
+                "    MODIFIES SQL DATA" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    UPDATE `Users`" + Environment.NewLine +
+                "        SET `Online` = 0," + Environment.NewLine +
+                "            `Socket` = NULL" + Environment.NewLine +
+                "        WHERE (`Online` = 1)" + Environment.NewLine +
+                "          AND NOT (`LastOnline` BETWEEN timestamp(DATE_SUB(NOW(), INTERVAL 10 SECOND)) AND NOW());" + Environment.NewLine +
+                "END $$" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE DEFINER=`root`@`localhost` PROCEDURE `ContactsMutual`(" + Environment.NewLine +
+                "    IN p_ID INT" + Environment.NewLine +
+                ")" + Environment.NewLine +
+                "    READS SQL DATA" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    SELECT IF((`ID_1` = p_ID), `ID_2`, `ID_1`) AS `ContactID`" + Environment.NewLine +
+                "        FROM `Contacts`" + Environment.NewLine +
+                "        WHERE (`ID_1` = p_ID OR `ID_2` = p_ID)" + Environment.NewLine +
+                "          AND `1To2` = 1 AND `2To1` = 1;" + Environment.NewLine +
+                "END $$" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE DEFINER=`root`@`localhost` PROCEDURE `ContactsAll`(" + Environment.NewLine +
+                "    IN `p_ID` INT" + Environment.NewLine +
+                ")" + Environment.NewLine +
+                "    READS SQL DATA" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    SELECT IF((`ID_1` = p_ID), `ID_2`, `ID_1`) AS ContactID," + Environment.NewLine +
+                "           IF((`ID_1` = p_ID AND `1To2` = 1) OR (`ID_2` = p_ID AND `2To1` = 1)), 1, 0) AS FromMe," + Environment.NewLine +
+                "           IF((`ID_1` = p_ID AND `2To1` = 1) OR (`ID_2` = p_ID AND `1To2` = 1)), 1, 0) AS ToMe" + Environment.NewLine +
+                "        FROM `Contacts`" + Environment.NewLine +
+                "        WHERE `ID_1` = p_ID OR `ID_2` = p_ID;" + Environment.NewLine +
+                "END &&" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE DEFINER=`root`@`localhost` PROCEDURE `ContactsAdd`(" + Environment.NewLine +
+                "    IN `p_ID` INT," + Environment.NewLine +
+                "    IN `p_ContactID` INT" + Environment.NewLine +
+                ")" + Environment.NewLine +
+                "    MODIFIES SQL DATA" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    IF (SELECT EXISTS(SELECT 1 FROM `Contacts`" + Environment.NewLine +
+                "        WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
+                "           OR (`ID_2` = p_ID AND `ID_1` = p_ContactID) LIMIT 1) as contactFound) = 1" + Environment.NewLine +
+                "    THEN" + Environment.NewLine +
+                "        UPDATE `contacts`" + Environment.NewLine +
+                "        SET `2To1` = IF(`ID_2` = p_ID, 1, `2To1`), `1To2` = IF(`ID_1` = p_ID, 1, `1To2`)" + Environment.NewLine +
+                "        WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
+                "           OR (`ID_2` = p_ID AND `ID_1` = p_ContactID);" + Environment.NewLine +
+                "    ELSE" + Environment.NewLine +
+                "        INSERT INTO `contacts`(`ID_1`, `ID_2`, `1To2`, `2To1`)" + Environment.NewLine +
+                "        VALUES (p_ID, p_ContactID, 1, 0);" + Environment.NewLine +
+                "    END IF;" + Environment.NewLine +
+                "END &&" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "CREATE DEFINER=`root`@`localhost` PROCEDURE `ContactsRemove`(" + Environment.NewLine +
+                "    IN `p_ID` INT," + Environment.NewLine +
+                "    IN `p_ContactID` INT" + Environment.NewLine +
+                ")" + Environment.NewLine +
+                "    MODIFIES SQL DATA" + Environment.NewLine +
+                "BEGIN" + Environment.NewLine +
+                "    UPDATE `contacts`" + Environment.NewLine +
+                "    SET `2To1` = IF(`ID_2` = p_ID, 0, `2To1`), `1To2` = IF(`ID_1` = p_ID, 0, `1To2`)" + Environment.NewLine +
+                "    WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
+                "       OR (`ID_2` = p_ID AND `ID_1` = p_ContactID);" + Environment.NewLine +
+                "    DELETE FROM `contacts`" + Environment.NewLine +
+                "    WHERE `1To2` = 0 AND `2To1` = 0;" + Environment.NewLine +
+                "END &&" + Environment.NewLine +
+                "" + Environment.NewLine +
+                "DELIMITER ;"
+                , new MySqlConnection(_connectionString.Replace("@IP", ip).Replace("Database=ChatTwo;", ""))))
+            {
+                try
+                {
+                    Open();
+                    // Execute SQL command.
+                    cmdResult = cmd.ExecuteNonQuery() > 0;
+                }
+                finally
+                {
+                    Close();
+                }
+            }
+            Connect(ip);
+            return cmdResult;
+        }
+
+        /// <summary>
+        /// Create the whole database from scratch.
+        /// </summary>
+        public static bool UpdateDatabase(string ip)
+        {
+            int version = -1;
+
+            // Test4: Test access to the `ServerStatus` table and get the version number.
+            using (MySqlCommand cmd = new MySqlCommand("SELECT `Version` FROM `ServerStatus`;", _conn))
+            {
+                    try
+                    {
+                        Open();
+                        // Execute SQL command.
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        if (reader.Read())
+                        {
+                            version = (int)reader["Version"];
+                        }
+                    }
+                    finally
+                    {
+                        Close();
+                    }
+            }
+
+            int cmdResult = 0;
+            switch (version)
+            {
+                case 0:
+                    throw new NotImplementedException("There is no update from version 0.");
+
+                    //using (MySqlCommand cmd = new MySqlCommand("UPDATE `ServerStatus` SET `Version` = 1, `LastUpdated` = NOW();", _conn))
+                    //{
+                    //    try
+                    //    {
+                    //        Open();
+                    //        // Execute SQL command.
+                    //        cmdResult = cmd.ExecuteNonQuery();
+                    //    }
+                    //    finally
+                    //    {
+                    //        Close();
+                    //    }
+                    //}
+                    //break;
+                default:
+                    break;
+            }
+            return (cmdResult != 0);
+        }
+        #endregion
+
+        #region Common routin
         /// <summary>
         /// Create a user on the `Users` table.
         /// </summary>
@@ -174,25 +392,6 @@ namespace ChatTwo_Server
                     Open();
                     // Execute SQL command.
                     cmdResult = cmd.ExecuteNonQuery();
-                }
-                catch(MySqlException ex)
-                {
-                    int a = ex.Number;
-                    string b = ex.Message;
-                    string c = ex.ToString();
-                    switch (ex.Number)
-                    { // http://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html#error_er_dup_entry_with_key_name
-                        case 1042:
-                            // "Could not connect to the server at \"" + ip + "\"."
-                            break;
-                        case 1061:
-                        case 1062:
-                        case 1586:
-                            // "Username already in use."
-                            break;
-                        default:
-                            break;
-                    }
                 }
                 finally
                 {
@@ -226,25 +425,6 @@ namespace ChatTwo_Server
                             (DateTime)reader["LastOnline"],// _ci),
                             (DateTime)reader["Registered"]//, _ci)
                             );
-                    }
-                }
-                catch (MySqlException ex)
-                {
-                    int a = ex.Number;
-                    string b = ex.Message;
-                    string c = ex.ToString();
-                    switch (ex.Number)
-                    { // http://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html#error_er_dup_entry_with_key_name
-                        case 1042:
-                            // "Could not connect to the server at \"" + ip + "\"."
-                            break;
-                        case 1061:
-                        case 1062:
-                        case 1586:
-                            // "Username already in use."
-                            break;
-                        default:
-                            break;
                     }
                 }
                 finally
@@ -313,5 +493,6 @@ namespace ChatTwo_Server
                 Close();
             }
         }
+        #endregion
     }
 }

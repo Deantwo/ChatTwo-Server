@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual C# Express 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatTwo Server", "ChatTwo Server\ChatTwo Server.csproj", "{AB9F9485-683F-4392-BF51-742E4DEB3D9D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatTwo Server", "ChatTwo Server.csproj", "{AB9F9485-683F-4392-BF51-742E4DEB3D9D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
