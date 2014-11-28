@@ -50,7 +50,7 @@
   <ItemGroup>
     <Compile Include="ByteHelper.cs" />
     <Compile Include="ChatTwo Protocol.cs" />
-    <Compile Include="DatabaseComunication.cs" />
+    <Compile Include="DatabaseCommunication.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>

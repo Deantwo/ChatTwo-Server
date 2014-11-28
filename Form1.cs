@@ -9,102 +9,165 @@ using System.Windows.Forms;
 
 namespace ChatTwo_Server
 {
-    public partial class Form1 : Form
+    public partial class FormMain : Form
     {
         UdpCommunication _server;
-        string _advDbIp = "localhost";
 
-        public Form1()
+        Image _infoTip;
+
+        public FormMain()
         {
             InitializeComponent();
-            Global.MainWindow = this;
+            Global.MainWindow = this; // This is just so I can call WriteLog from other classes.
+
+#if Debug
+            this.Name += " (DEBUG)";
+#endif
             
             _server = new UdpCommunication();
 
+            notifyIcon1.BalloonTipTitle = this.Name;
             notifyIcon1.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+
+            // Steal the system "informaion icon" and resize it.
+            _infoTip = SystemIcons.Information.ToBitmap();
+            _infoTip = (Image)(new Bitmap(_infoTip, new Size(12, 12)));
+
+            tabPage2.Parent = null;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            bool worked;
-
             _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
-            worked = _server.Start(9020);
+            bool worked = _server.Start(9020);
             if(worked)
                 WriteLog("UDP server started on port " + _server.Port + ".", Color.Green.ToArgb());
             else
                 WriteLog("UDP server failed on port " + _server.Port + ".", Color.Red.ToArgb());
-
-            worked = ConnectToDatabase();
-            if (worked)
-                WriteLog("Database connected esablished.", Color.Green.ToArgb());
-            else
-                WriteLog("Database connected failed.", Color.Red.ToArgb());
         }
 
-        /// <summary>
-        /// Test the connection to the server and if the domain user have access to it, if not then popup and warn the user.
-        /// This method and RouterBackupDatabase.TestConnection need to be rewritten.
-        /// </summary>
-        private bool ConnectToDatabase()
+        #region Database Setup
+        private void tbxSql_ConnectionStringValuesChanged(object sender, EventArgs e)
         {
+            btnSqlConnect.Enabled = false;
+            btnSqlCreate.Enabled = false;
+            btnSqlUpdate.Enabled = false;
+            lblSqlConnection.Text = "Test: -";
+            lblSqlConnection.Image = null;
+        }
+
+        private void btnSqlTest_Click(object sender, EventArgs e)
+        {
+            tbxSql_ConnectionStringValuesChanged(null, null);
+
             // Basic user feedback.
             toolStripStatusLabel1.Text = "Testing connection and access to the database...";
             statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
 
             // Test the connection and access, giving the user feedback if it fails.
-            DatabaseComunication.ConnectionTestResult dbTest = DatabaseComunication.TestConnection(_advDbIp);
+            DatabaseCommunication.ConnectionTestResult dbTest = DatabaseCommunication.TestConnection(tbxSqlUser.Text, tbxSqlPassword.Text, tbxSqlAddress.Text, (int)nudSqlPort.Value);
             toolStripStatusLabel1.Text = dbTest.ToString();
             // Check the result of the connetion test.
-            bool connectTestSuccessful = dbTest == DatabaseComunication.ConnectionTestResult.Ready;
+            bool connectTestSuccessful = dbTest == DatabaseCommunication.ConnectionTestResult.Successful;
             if (connectTestSuccessful)
             {
-                DatabaseComunication.Connect(_advDbIp);
-                return true;
+                lblSqlConnection.Text = "Test: successful";
+                toolTip1.SetToolTip(lblSqlConnection, "");
+                btnSqlConnect.Enabled = true;
             }
             else
             {
-                string errorMessage = "Unknown SQL error";
-                string errorTip = "";
+                string errorMessage;
+                string errorTip;
                 switch (dbTest)
                 {
-                    case DatabaseComunication.ConnectionTestResult.NoConnection:
-                        errorMessage = "Could not connect to the server at \"" + _advDbIp + "\".";
-                        errorTip = Environment.NewLine + Environment.NewLine +
-                            "You can change the IP address of the database in " + Environment.NewLine + 
-                            "\"Settings -> SQL Database -> Set IP Address\"." + Environment.NewLine + 
-                            "The problem could also be a timeout error.";
+                    case DatabaseCommunication.ConnectionTestResult.NoConnection:
+                        errorMessage = "Could not connect to the server at \"" + tbxSqlAddress.Text + ":" + (int)nudSqlPort.Value + "\"";
+                        errorTip = "." + Environment.NewLine + Environment.NewLine +
+                            "Please make sure the MySQL server is running and the IP address and port is correct.";
                         break;
-                    case DatabaseComunication.ConnectionTestResult.NoPermission:
-                        errorMessage = "Permission failed for user.";
-                        errorTip = Environment.NewLine + Environment.NewLine +
-                            "Talk to the system admin to gain access to the MySQL Database.";
+                    case DatabaseCommunication.ConnectionTestResult.FailLogin:
+                        errorMessage = "Login rejected by server";
+                        errorTip = "." + Environment.NewLine + Environment.NewLine +
+                            "Please make sure the username and password is correct.";
                         break;
-                    case DatabaseComunication.ConnectionTestResult.MissingDatabase:
-                        errorMessage = "Database does not exist.";
-                        errorTip = Environment.NewLine + Environment.NewLine +
-                            "You can change the IP address of the database in " + Environment.NewLine +
-                            "\"Settings -> SQL Database -> Create Database\"." + Environment.NewLine +
-                            "The problem could also be a timeout error.";
+                    case DatabaseCommunication.ConnectionTestResult.NoPermission:
+                        errorMessage = "Permission failed for user";
+                        errorTip = "." + Environment.NewLine + Environment.NewLine +
+                            "Talk to the system admin to gain access to the MySQL server.";
                         break;
-                    case DatabaseComunication.ConnectionTestResult.MissingTable:
+                    case DatabaseCommunication.ConnectionTestResult.MissingDatabase:
+                        errorMessage = "Database does not exist";
+                        errorTip = "." + Environment.NewLine + Environment.NewLine +
+                            "You can create/repair the database by clicking the button below.";
+                        btnSqlCreate.Enabled = true;
+                        break;
+                    case DatabaseCommunication.ConnectionTestResult.MissingTable:
                         errorMessage = "";
                         errorTip = "";
                         break;
-                    case DatabaseComunication.ConnectionTestResult.OutDated:
-                        errorMessage = "SQL database need to be updated.";
-                        errorTip = "";
+                    case DatabaseCommunication.ConnectionTestResult.OutDated:
+                        errorMessage = "SQL database need to be updated";
+                        errorTip = ".";
+                        btnSqlUpdate.Enabled = true;
                         break;
                     default:
-                        errorMessage = "Unknown SQL error.";
-                        errorTip = "";
+                        errorMessage = "Unknown SQL error";
+                        errorTip = ".";
                         break;
                 }
                 MessageBox.Show(errorMessage + errorTip, "SQL Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                toolStripStatusLabel1.Text = errorMessage;
-                return false;
+                toolStripStatusLabel1.Text = "SQL Error: " + errorMessage;
+                lblSqlConnection.Text = "Test: failed";
+                lblSqlConnection.Image = _infoTip;
+                toolTip1.SetToolTip(lblSqlConnection, errorMessage + errorTip);
             }
         }
+
+        private void btnSqlConnect_Click(object sender, EventArgs e)
+        {
+            tbxSqlUser.ReadOnly = !tbxSqlUser.ReadOnly;
+            tbxSqlPassword.ReadOnly = !tbxSqlPassword.ReadOnly;
+            tbxSqlAddress.ReadOnly = !tbxSqlAddress.ReadOnly;
+            nudSqlPort.ReadOnly = !nudSqlPort.ReadOnly;
+            if (DatabaseCommunication.Active)
+            {
+                DatabaseCommunication.Disconnect();
+                btnSqlConnect.Text = "Start Database Connection";
+                tabPage2.Parent = null;
+            }
+            else
+            {
+                DatabaseCommunication.Connect(tbxSqlUser.Text, tbxSqlPassword.Text, tbxSqlAddress.Text, (int)nudSqlPort.Value);
+                btnSqlConnect.Text = "Stop Database Connection";
+                tabPage2.Parent = tabControl1;
+            }
+        }
+
+        private void btnSqlCreate_Click(object sender, EventArgs e)
+        {
+            bool worked = DatabaseCommunication.CreateDatabase(tbxSqlUser.Text, tbxSqlPassword.Text, tbxSqlAddress.Text, (int)nudSqlPort.Value);
+            if (worked)
+            {
+                tbxSql_ConnectionStringValuesChanged(null, null);
+                toolStripStatusLabel1.Text = "SQL database created/repaired";
+            }
+            else
+                WriteLog("Could not create the database.", Color.Red.ToArgb());
+        }
+
+        private void btnSqlUpdate_Click(object sender, EventArgs e)
+        {
+            bool worked = DatabaseCommunication.UpdateDatabase(tbxSqlUser.Text, tbxSqlPassword.Text, tbxSqlAddress.Text, (int)nudSqlPort.Value);
+            if (worked)
+            {
+                tbxSql_ConnectionStringValuesChanged(null, null);
+                toolStripStatusLabel1.Text = "SQL database Updated";
+            }
+            else
+                WriteLog("Could not update the database.", Color.Red.ToArgb());
+        }
+        #endregion
 
         public void WriteLog(string log, int colorARGB = -16777216) // 0xFF000000 (Color.Black)
         {
@@ -158,26 +221,28 @@ namespace ChatTwo_Server
             }
         }
 
+        #region Database Test Commands
         private void CreateUser_Click(object sender, EventArgs e)
         {
-            bool worked = DatabaseComunication.CreateUser(textBox1.Text, textBox2.Text);
+            bool worked = DatabaseCommunication.CreateUser(textBox1.Text, textBox2.Text);
             if (worked)
                 WriteLog("User created: " + textBox1.Text, Color.Blue.ToArgb());
         }
 
         private void ReadUser_Click(object sender, EventArgs e)
         {
-            UserObj user = DatabaseComunication.ReadUser((int)numericUpDown1.Value);
+            UserObj user = DatabaseCommunication.ReadUser((int)numericUpDown1.Value);
             if (user != null)
                 WriteLog(user.ToString(), Color.Purple.ToArgb());
         }
 
         private void StatusUpdate_Click(object sender, EventArgs e)
         {
-            bool worked = DatabaseComunication.UpdateUser((int)numericUpDown1.Value, new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 10, 0, 0, 1} ), 9020));
+            bool worked = DatabaseCommunication.UpdateUser((int)numericUpDown1.Value, new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 10, 0, 0, 1} ), 9020));
             if (worked)
                 WriteLog("Updated user: " + (int)numericUpDown1.Value, Color.Blue.ToArgb());
         }
+        #endregion
 
         #region Options
         private void minimizeToTrayToolStripMenuItem_Click(object sender, EventArgs e)
@@ -185,6 +250,12 @@ namespace ChatTwo_Server
             minimizeToTrayToolStripMenuItem.Checked = !minimizeToTrayToolStripMenuItem.Checked;
             //Properties.Settings.Default.setTray = minimizeToTrayToolStripMenuItem.Checked;
             //Properties.Settings.Default.Save();
+        }
+
+        private void showPasswordsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            showPasswordsToolStripMenuItem.Checked = !showPasswordsToolStripMenuItem.Checked;
+            tbxSqlPassword.UseSystemPasswordChar = !showPasswordsToolStripMenuItem.Checked;
         }
         #endregion
 
@@ -242,13 +313,13 @@ namespace ChatTwo_Server
             {
                 // Add closing of sockets and stuff here!
                 _server.Close();
-                DatabaseComunication.Disconnect();
+                DatabaseCommunication.Disconnect();
             }
         }
     }
 
     static class Global
     {
-        public static Form1 MainWindow { set; get; }
+        public static FormMain MainWindow { set; get; }
     }
 }
