@@ -37,20 +37,20 @@ namespace ChatTwo_Server
         /// </summary>
         public static void Connect(string user, string password, string ip, int port)
         {
-            MySqlConnectionStringBuilder conBuilder = new MySqlConnectionStringBuilder();
-            conBuilder.Add("User id", user);
-            conBuilder.Add("Password", password);
-            conBuilder.Add("Network Address", ip);
-            conBuilder.Add("Port", port);
-            conBuilder.Add("Database", "ChatTwo");
-            conBuilder.Add("Connection timeout", 5);
+            MySqlConnectionStringBuilder connBuilder = new MySqlConnectionStringBuilder();
+            connBuilder.Add("User id", user);
+            connBuilder.Add("Password", password);
+            connBuilder.Add("Network Address", ip);
+            connBuilder.Add("Port", port);
+            connBuilder.Add("Database", "ChatTwo");
+            connBuilder.Add("Connection timeout", 5);
 
             // Create the SqlConnection object using the saved IP address from settings.
-            _conn = new MySqlConnection(conBuilder.ConnectionString);
+            _conn = new MySqlConnection(connBuilder.ConnectionString);
 
             //// Start the thread.
             _online = true;
-            _threadStatusIntervalUpdate = new Thread(new ThreadStart(StatusIntervalUpdate));
+            _threadStatusIntervalUpdate = new Thread(() => StatusIntervalUpdate(connBuilder.ConnectionString));
             _threadStatusIntervalUpdate.Name = "StatusIntervalUpdate Thread (StatusIntervalUpdate method)";
             _threadStatusIntervalUpdate.Start();
         }
@@ -106,34 +106,34 @@ namespace ChatTwo_Server
             // (Does not seem to have much of an effect on the connection timeout.)
             const int timeout = 5;
 
-            MySqlConnectionStringBuilder conBuilder = new MySqlConnectionStringBuilder();
-            conBuilder.Add("User id", user);
-            conBuilder.Add("Password", password);
-            conBuilder.Add("Network Address", ip);
-            conBuilder.Add("Port", port);
-            //conBuilder.Add("Database", "ChatTwo");
-            conBuilder.Add("Connection timeout", timeout);
+            MySqlConnectionStringBuilder connBuilder = new MySqlConnectionStringBuilder();
+            connBuilder.Add("User id", user);
+            connBuilder.Add("Password", password);
+            connBuilder.Add("Network Address", ip);
+            connBuilder.Add("Port", port);
+            //connBuilder.Add("Database", "ChatTwo");
+            connBuilder.Add("Connection timeout", timeout);
 
             // Test1: Test connection to the server using the IP address from the settings. Add "Connection Timeout" (even though it seem not to work).
-            using (MySqlConnection conTest = new MySqlConnection(conBuilder.ConnectionString))
+            using (MySqlConnection testConn = new MySqlConnection(connBuilder.ConnectionString))
             {
                 // Test2: Test access to the database.
-                MySqlCommand test2 = new MySqlCommand("USE `ChatTwo`;", conTest);
+                MySqlCommand test2 = new MySqlCommand("USE `ChatTwo`;", testConn);
                 test2.CommandTimeout = timeout;
 
                 // Test3: Test access to the `Contacts` table and the `Users` table..
-                MySqlCommand test3 = new MySqlCommand("SELECT * FROM `ChatTwo`.`Contacts` WHERE 0 = 1;SELECT * FROM `ChatTwo`.`Users` WHERE 0 = 1;", conTest);
+                MySqlCommand test3 = new MySqlCommand("SELECT * FROM `ChatTwo`.`Contacts` WHERE 0 = 1;SELECT * FROM `ChatTwo`.`Users` WHERE 0 = 1;", testConn);
                 test3.CommandTimeout = timeout;
 
                 // Test4: Test access to the `ServerStatus` table and get the version number.
-                MySqlCommand test4 = new MySqlCommand("SELECT `Version` FROM `ChatTwo`.`ServerStatus`;", conTest);
+                MySqlCommand test4 = new MySqlCommand("SELECT `Version` FROM `ChatTwo`.`ServerStatus`;", testConn);
                 test4.CommandTimeout = timeout;
                 int version = -1;
 
                 // Run all tests.
                 try
                 {
-                    conTest.Open();
+                    testConn.Open();
                     test2.ExecuteNonQuery();
                     test3.ExecuteNonQuery();
                     MySqlDataReader reader = test4.ExecuteReader();
@@ -172,13 +172,14 @@ namespace ChatTwo_Server
                             return ConnectionTestResult.MissingTable;
                         default:
                             // Unknown SQL error
-                            return ConnectionTestResult.UnknownError;
+                            //return ConnectionTestResult.UnknownError;
+                            throw;
                     }
                 }
                 finally
                 {
-                    if (conTest.State != System.Data.ConnectionState.Closed)
-                        conTest.Close();
+                    if (testConn.State != System.Data.ConnectionState.Closed)
+                        testConn.Close();
                 }
             
                 // If the version is old, suggest an update.
@@ -200,15 +201,15 @@ namespace ChatTwo_Server
         {
             int cmdResult = 0;
 
-            MySqlConnectionStringBuilder conBuilder = new MySqlConnectionStringBuilder();
-            conBuilder.Add("User id", user);
-            conBuilder.Add("Password", password);
-            conBuilder.Add("Network Address", ip);
-            conBuilder.Add("Port", port);
-            //conBuilder.Add("Database", "ChatTwo");
-            //conBuilder.Add("Connection timeout", 5);
+            MySqlConnectionStringBuilder connBuilder = new MySqlConnectionStringBuilder();
+            connBuilder.Add("User id", user);
+            connBuilder.Add("Password", password);
+            connBuilder.Add("Network Address", ip);
+            connBuilder.Add("Port", port);
+            //connBuilder.Add("Database", "ChatTwo");
+            //connBuilder.Add("Connection timeout", 5);
 
-            using (MySqlConnection tempCon = new MySqlConnection(conBuilder.ConnectionString))
+            using (MySqlConnection tempConn = new MySqlConnection(connBuilder.ConnectionString))
             {
                 using (MySqlCommand cmd = new MySqlCommand(
                     "CREATE DATABASE IF NOT EXISTS `ChatTwo`;" + Environment.NewLine +
@@ -343,18 +344,18 @@ namespace ChatTwo_Server
                     "    DELETE FROM `contacts`" + Environment.NewLine +
                     "    WHERE `1To2` = 0 AND `2To1` = 0;" + Environment.NewLine +
                     "END;"
-                    , tempCon))
+                    , tempConn))
                 {
                     try
                     {
-                        tempCon.Open();
+                        tempConn.Open();
                         // Execute SQL command.
                         cmdResult = cmd.ExecuteNonQuery();
                     }
                     finally
                     {
-                        if (tempCon.State != System.Data.ConnectionState.Closed)
-                            tempCon.Close();
+                        if (tempConn.State != System.Data.ConnectionState.Closed)
+                            tempConn.Close();
                     }
                 }
             }
@@ -368,19 +369,19 @@ namespace ChatTwo_Server
         {
             int cmdResult = 0;
 
-            MySqlConnectionStringBuilder conBuilder = new MySqlConnectionStringBuilder();
-            conBuilder.Add("User id", user);
-            conBuilder.Add("Password", password);
-            conBuilder.Add("Network Address", ip);
-            conBuilder.Add("Port", port);
-            //conBuilder.Add("Database", "ChatTwo");
-            //conBuilder.Add("Connection timeout", 5);
+            MySqlConnectionStringBuilder connBuilder = new MySqlConnectionStringBuilder();
+            connBuilder.Add("User id", user);
+            connBuilder.Add("Password", password);
+            connBuilder.Add("Network Address", ip);
+            connBuilder.Add("Port", port);
+            //connBuilder.Add("Database", "ChatTwo");
+            //connBuilder.Add("Connection timeout", 5);
 
-            using (MySqlConnection tempCon = new MySqlConnection(conBuilder.ConnectionString))
+            using (MySqlConnection tempConn = new MySqlConnection(connBuilder.ConnectionString))
             {
                 // Get the database version number from the `ServerStatus` table.
                 int version = -1;
-                using (MySqlCommand cmd = new MySqlCommand("SELECT `ChatTwo`.`Version` FROM `ServerStatus`;", tempCon))
+                using (MySqlCommand cmd = new MySqlCommand("SELECT `ChatTwo`.`Version` FROM `ServerStatus`;", tempConn))
                 {
                     try
                     {
@@ -403,20 +404,20 @@ namespace ChatTwo_Server
                     case 0:
                         throw new NotImplementedException("There is no update from version 0 (yet).");
 
-                    //using (MySqlCommand cmd = new MySqlCommand("UPDATE `ServerStatus` SET `Version` = 1, `LastUpdated` = NOW();", _conn))
-                    //{
-                    //    try
-                    //    {
-                    //        Open();
-                    //        // Execute SQL command.
-                    //        cmdResult = cmd.ExecuteNonQuery();
-                    //    }
-                    //    finally
-                    //    {
-                    //        Close();
-                    //    }
-                    //}
-                    //break;
+                        //using (MySqlCommand cmd = new MySqlCommand("UPDATE `ServerStatus` SET `Version` = 1, `LastUpdated` = NOW();", _conn))
+                        //{
+                        //    try
+                        //    {
+                        //        Open();
+                        //        // Execute SQL command.
+                        //        cmdResult = cmd.ExecuteNonQuery();
+                        //    }
+                        //    finally
+                        //    {
+                        //        Close();
+                        //    }
+                        //}
+                        //break;
                     default:
                         break;
                 }
@@ -517,31 +518,35 @@ namespace ChatTwo_Server
             return (cmdResult != 0);
         }
 
-        static public void StatusIntervalUpdate()
+        static public void StatusIntervalUpdate(string connString)
         {
-            MySqlCommand cmd = new MySqlCommand("StatusIntervalUpdate", _conn);
-            //Set up myCommand to reference stored procedure 'StatusIntervalUpdate'.
-            cmd.CommandType = System.Data.CommandType.StoredProcedure;
+            using (MySqlConnection intervalConn = new MySqlConnection(connString))
+            {
+                MySqlCommand cmd = new MySqlCommand("StatusIntervalUpdate", intervalConn);
+                //Set up myCommand to reference stored procedure 'StatusIntervalUpdate'.
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
-            try
-            {
-                while (_online)
+                try
                 {
-                    Open();
-                    cmd.ExecuteNonQuery(); // Execute SQL command.
-                    Close();
-                    Thread.Sleep(1000); // 1 seconds.
+                    while (_online)
+                    {
+                        intervalConn.Open();
+                        cmd.ExecuteNonQuery(); // Execute SQL command.
+                        intervalConn.Close();
+                        Thread.Sleep(1000); // 1 seconds.
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("### " + _threadStatusIntervalUpdate.Name + " has crashed:");
-                System.Diagnostics.Debug.WriteLine("### " + ex.Message);
-                System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
-            }
-            finally
-            {
-                Close();
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine("### " + _threadStatusIntervalUpdate.Name + " has crashed:");
+                    System.Diagnostics.Debug.WriteLine("### " + ex.Message);
+                    System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
+                }
+                finally
+                {
+                    if (intervalConn.State == ConnectionState.Open)
+                        intervalConn.Close();
+                }
             }
         }
         #endregion
