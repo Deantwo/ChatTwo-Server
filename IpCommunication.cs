@@ -22,11 +22,11 @@ namespace ChatTwo_Server
             set { _socketLocal = value; }
             get { return _socketLocal; }
         }
-        protected IPEndPoint _socketRemote;
-        public IPEndPoint SocketRemote
+        protected IPEndPoint _socketServer;
+        public IPEndPoint SocketServer
         {
-            set { _socketRemote = value; }
-            get { return _socketRemote; }
+            set { _socketServer = value; }
+            get { return _socketServer; }
         }
 
         protected virtual void OnMessageReceived(MessageReceivedEventArgs e)
@@ -41,16 +41,11 @@ namespace ChatTwo_Server
         public event EventHandler<MessageReceivedEventArgs> MessageReceived;
     }
 
-    public class MessageReceivedEventArgs : EventArgs
-    {
-        public IPEndPoint Sender { get; set; }
-        public byte[] Data { get; set; }
-    }
-
     class UdpCommunication : IpCommunication
     {
         protected Thread _threadMessageListener;
         protected Thread _threadKeepalive;
+        protected Thread _threadMessageSending;
 
         protected UdpClient _client;
         public UdpClient Client
@@ -63,6 +58,9 @@ namespace ChatTwo_Server
         {
             get { return ((IPEndPoint)_client.Client.LocalEndPoint).Port; }
         }
+
+        protected List<ControlledMessage> _messageSendingControlList = new List<ControlledMessage>();
+        protected List<int> _messageReceivingControlList = new List<int>();
 
         public bool Start(int serverPort)
         {
@@ -91,6 +89,9 @@ namespace ChatTwo_Server
             _threadKeepalive = new Thread(new ThreadStart(Keepalive));
             _threadKeepalive.Name = "Keepalive Thread (Keepalive method)";
             _threadKeepalive.Start();
+            _threadMessageSending = new Thread(new ThreadStart(MessageTransmissionControl));
+            _threadMessageSending.Name = "Message Ecoding Thread (MessageTransmissionControl method)";
+            _threadMessageSending.Start();
             return true;
         }
 
@@ -104,22 +105,34 @@ namespace ChatTwo_Server
                     byte[] receivedBytes = _client.Receive(ref remoteSender);
                     if (!(receivedBytes != null && receivedBytes.Length != 0))
                     {
-                        // Start a UdpCommunicationReceiver.
-                        if (ChatTwo_Protocol.ValidateSingature(receivedBytes))
+                        if (receivedBytes[0] == 0xCE && receivedBytes.Length == 5)
                         {
-                            if (receivedBytes.Length != 2) // Ignore empty messages. These are just keepalive messages?
-                            {
-                                Thread threadMessageDecoding;
-                                threadMessageDecoding = new Thread(() => ReadingMessage(remoteSender, receivedBytes));
-                                threadMessageDecoding.Name = "Message Decoding Thread (ReadingMessage method)";
-                                threadMessageDecoding.Start();
-                            }
+                            // The received message is a ACK message.
+                            int hash = ByteHelper.ToInt32(receivedBytes, 1);
+                            ControlledMessage message = _messageSendingControlList.Find(x => x.Hash == hash);
+                            _messageSendingControlList.Remove(message);
                         }
                         else
                         {
-                            System.Diagnostics.Debug.WriteLine("--- Unknown message received:");
-                            System.Diagnostics.Debug.WriteLine("--- # 0x" + ByteHelper.ToHex(receivedBytes) + " #");
-                            System.Diagnostics.Debug.WriteLine("--- From " + remoteSender.Address.ToString() + ":" + remoteSender.Port.ToString());
+                            // Send back an ACK message.
+                            int hash = receivedBytes.GetHashCode();
+                            byte[] ackBytes = ByteHelper.ConcatinateArray(new byte[] { 0xCE }, BitConverter.GetBytes(hash));
+                            _client.Send(ackBytes, ackBytes.Length, remoteSender);
+
+                            // Check if the message is a duplicate.
+                            if (!_messageReceivingControlList.Any(x => x == hash))
+                            {
+                                // Add the message's hash to a list so we don't react on the same message twice.
+                                _messageReceivingControlList.Add(hash);
+                                if (_messageReceivingControlList.Count > 5) // Only keep the latest 5 messages.
+                                    _messageReceivingControlList.Remove(0);
+
+                                // Fire an MessageReceived event.
+                                MessageReceivedEventArgs args = new MessageReceivedEventArgs();
+                                args.Sender = remoteSender;
+                                args.Data = receivedBytes;
+                                OnMessageReceived(args);
+                            }
                         }
                     }
                 }
@@ -136,16 +149,6 @@ namespace ChatTwo_Server
                         continue;
                 }
             }
-        }
-
-        protected void ReadingMessage(IPEndPoint sender, byte[] messageBytes) // Threaded (threaded) method.
-        {
-            
-
-            MessageReceivedEventArgs args = new MessageReceivedEventArgs();
-            args.Sender = sender;
-            args.Data = messageBytes;
-            OnMessageReceived(args);
         }
 
         protected void Keepalive() // Threaded looping method.
@@ -169,48 +172,76 @@ namespace ChatTwo_Server
         {
             if (_online)
             {
+                //_threadKeepalive.Abort();
                 _threadKeepalive.Join();
-                //_listenThread.Abort(); // This caused some problems.
+                //_threadMessageListener.Abort(); // This caused some problems.
                 _threadMessageListener.Join(); // Wait for ListenThread's next "am I online?" check.
                 _client.Close();
             }
         }
 
-        public void SendMessage(string message = "", byte[] data = null)
+        public void SendMessage(byte[] data, IPEndPoint to = null)
         {
-            Thread threadMessageSending;
-            threadMessageSending = new Thread(() => ThreadedSendMessage(message, data));
-            threadMessageSending.Name = "Message Ecoding Thread (SendMessage method)";
-            threadMessageSending.Start();
+            ControlledMessage message = new ControlledMessage();
+            if (to != null)
+                message.Recipient = to;
+            else
+                message.Recipient = _socketServer;
+            message.Data = data;
+
+            _messageSendingControlList.Add(message);
         }
 
-        protected void ThreadedSendMessage(string message = "", byte[] data = null) // Threaded method.
+        protected void MessageTransmissionControl() // Threaded method.
         {
-            byte[] transmittedBytes = new byte[0];
-
-            byte dataLength = 0;
-            if (data != null && data.Length != 0)
-                dataLength = (byte)data.Length;
-
-            if (dataLength != 0 || !String.IsNullOrEmpty(message))
+            while (_online)
             {
-                transmittedBytes = ByteHelper.ConcatinateArray(transmittedBytes, new byte[] { dataLength }); // Add dataLength byte.
+                CheckMessageControlList();
+                Thread.Sleep(200);
+            }
+        }
 
-                if (dataLength != 0)
-                    transmittedBytes = ByteHelper.ConcatinateArray(transmittedBytes, data); // Add data.
-
-                if (!String.IsNullOrEmpty(message))
+        protected void CheckMessageControlList()
+        {
+            if (_messageSendingControlList.Count != 0)
+            {
+                List<ControlledMessage> temp = _messageSendingControlList.FindAll(x => x.LastTry == null || (DateTime.Now - x.LastTry).TotalMilliseconds > 200);
+                foreach (ControlledMessage message in temp)
                 {
-                    byte[] messageBytes = new byte[0];
-                    messageBytes = System.Text.Encoding.Unicode.GetBytes(message); // Convert message to bytes.
-                    transmittedBytes = ByteHelper.ConcatinateArray(transmittedBytes, messageBytes); // Add messageBytes.
+                    if (SendControlledMessage(message))
+                    {
+                        message.LastTry = DateTime.Now;
+                    }
                 }
             }
-
-            // Concatinate all the byte arrays together. (TAG . version . dataLength . dataBytes . messageBytes)
-            transmittedBytes = ChatTwo_Protocol.AddSingature(transmittedBytes);
-
-            _client.Send(transmittedBytes, transmittedBytes.Length, _socketRemote); // Send the message.
         }
+
+        protected bool SendControlledMessage(ControlledMessage message)
+        {
+            try
+            {
+                _client.Send(message.Data, message.Data.Length, message.Recipient); // Send the message.
+            }
+            catch (SocketException ex)
+            {
+                throw;
+                return false;
+            }
+            return true;
+        }
+    }
+
+    public class MessageReceivedEventArgs : EventArgs
+    {
+        public IPEndPoint Sender { get; set; }
+        public byte[] Data { get; set; }
+    }
+
+    internal class ControlledMessage
+    {
+        public IPEndPoint Recipient { get; set; }
+        public byte[] Data { get; set; }
+        public int Hash { get { return Data.GetHashCode(); } }
+        public DateTime LastTry { get; set; }
     }
 }
