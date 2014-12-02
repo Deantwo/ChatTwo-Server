@@ -20,8 +20,8 @@ namespace ChatTwo_Server
             InitializeComponent();
             Global.MainWindow = this; // This is just so I can call WriteLog from other classes.
 
-#if Debug
-            this.Name += " (DEBUG)";
+#if DEBUG
+            this.Text += " (DEBUG)";
 #endif
             
             _server = new UdpCommunication();
