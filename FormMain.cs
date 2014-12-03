@@ -36,7 +36,7 @@ namespace ChatTwo_Server
             tabPage2.Parent = null;
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void FormMain_Load(object sender, EventArgs e)
         {
             _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
             bool worked = _server.Start(9020);
@@ -304,7 +304,7 @@ namespace ChatTwo_Server
             this.Close();
         }
 
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        private void FormMain_FormClosing(object sender, FormClosingEventArgs e)
         {
             DialogResult reply = MessageBox.Show(this, "Are you sure you want to close the server?", "Close?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (reply == DialogResult.No)
