@@ -45,16 +45,16 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabControl1 = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.tabLog = new System.Windows.Forms.TabPage();
             this.rtbxLog = new System.Windows.Forms.RichTextBox();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.tabSqlTest = new System.Windows.Forms.TabPage();
             this.button1 = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button3 = new System.Windows.Forms.Button();
             this.button2 = new System.Windows.Forms.Button();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.textBox2 = new System.Windows.Forms.TextBox();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.tabSetup = new System.Windows.Forms.TabPage();
             this.groupBoxSql = new System.Windows.Forms.GroupBox();
             this.btnSqlUpdate = new System.Windows.Forms.Button();
             this.btnSqlConnect = new System.Windows.Forms.Button();
@@ -74,10 +74,10 @@
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.tabControl1.SuspendLayout();
-            this.tabPage1.SuspendLayout();
-            this.tabPage2.SuspendLayout();
+            this.tabLog.SuspendLayout();
+            this.tabSqlTest.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
-            this.tabPage3.SuspendLayout();
+            this.tabSetup.SuspendLayout();
             this.groupBoxSql.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSqlPort)).BeginInit();
             this.SuspendLayout();
@@ -207,9 +207,9 @@
             // 
             // tabControl1
             // 
-            this.tabControl1.Controls.Add(this.tabPage1);
-            this.tabControl1.Controls.Add(this.tabPage2);
-            this.tabControl1.Controls.Add(this.tabPage3);
+            this.tabControl1.Controls.Add(this.tabLog);
+            this.tabControl1.Controls.Add(this.tabSqlTest);
+            this.tabControl1.Controls.Add(this.tabSetup);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 24);
             this.tabControl1.Name = "tabControl1";
@@ -217,16 +217,16 @@
             this.tabControl1.Size = new System.Drawing.Size(309, 314);
             this.tabControl1.TabIndex = 10;
             // 
-            // tabPage1
+            // tabLog
             // 
-            this.tabPage1.Controls.Add(this.rtbxLog);
-            this.tabPage1.Location = new System.Drawing.Point(4, 22);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(301, 288);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "Log";
-            this.tabPage1.UseVisualStyleBackColor = true;
+            this.tabLog.Controls.Add(this.rtbxLog);
+            this.tabLog.Location = new System.Drawing.Point(4, 22);
+            this.tabLog.Name = "tabLog";
+            this.tabLog.Padding = new System.Windows.Forms.Padding(3);
+            this.tabLog.Size = new System.Drawing.Size(301, 288);
+            this.tabLog.TabIndex = 0;
+            this.tabLog.Text = "Log";
+            this.tabLog.UseVisualStyleBackColor = true;
             // 
             // rtbxLog
             // 
@@ -240,21 +240,21 @@
             this.rtbxLog.TabIndex = 1;
             this.rtbxLog.Text = "";
             // 
-            // tabPage2
+            // tabSqlTest
             // 
-            this.tabPage2.Controls.Add(this.button1);
-            this.tabPage2.Controls.Add(this.textBox1);
-            this.tabPage2.Controls.Add(this.button3);
-            this.tabPage2.Controls.Add(this.button2);
-            this.tabPage2.Controls.Add(this.numericUpDown1);
-            this.tabPage2.Controls.Add(this.textBox2);
-            this.tabPage2.Location = new System.Drawing.Point(4, 22);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage2.Size = new System.Drawing.Size(301, 288);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Manual Management";
-            this.tabPage2.UseVisualStyleBackColor = true;
+            this.tabSqlTest.Controls.Add(this.button1);
+            this.tabSqlTest.Controls.Add(this.textBox1);
+            this.tabSqlTest.Controls.Add(this.button3);
+            this.tabSqlTest.Controls.Add(this.button2);
+            this.tabSqlTest.Controls.Add(this.numericUpDown1);
+            this.tabSqlTest.Controls.Add(this.textBox2);
+            this.tabSqlTest.Location = new System.Drawing.Point(4, 22);
+            this.tabSqlTest.Name = "tabSqlTest";
+            this.tabSqlTest.Padding = new System.Windows.Forms.Padding(3);
+            this.tabSqlTest.Size = new System.Drawing.Size(301, 288);
+            this.tabSqlTest.TabIndex = 1;
+            this.tabSqlTest.Text = "Manual Management";
+            this.tabSqlTest.UseVisualStyleBackColor = true;
             // 
             // button1
             // 
@@ -307,16 +307,16 @@
             this.textBox2.Size = new System.Drawing.Size(100, 20);
             this.textBox2.TabIndex = 6;
             // 
-            // tabPage3
+            // tabSetup
             // 
-            this.tabPage3.Controls.Add(this.groupBoxSql);
-            this.tabPage3.Location = new System.Drawing.Point(4, 22);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage3.Size = new System.Drawing.Size(301, 288);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "Setup";
-            this.tabPage3.UseVisualStyleBackColor = true;
+            this.tabSetup.Controls.Add(this.groupBoxSql);
+            this.tabSetup.Location = new System.Drawing.Point(4, 22);
+            this.tabSetup.Name = "tabSetup";
+            this.tabSetup.Padding = new System.Windows.Forms.Padding(3);
+            this.tabSetup.Size = new System.Drawing.Size(301, 288);
+            this.tabSetup.TabIndex = 2;
+            this.tabSetup.Text = "Setup";
+            this.tabSetup.UseVisualStyleBackColor = true;
             // 
             // groupBoxSql
             // 
@@ -501,11 +501,11 @@
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             this.tabControl1.ResumeLayout(false);
-            this.tabPage1.ResumeLayout(false);
-            this.tabPage2.ResumeLayout(false);
-            this.tabPage2.PerformLayout();
+            this.tabLog.ResumeLayout(false);
+            this.tabSqlTest.ResumeLayout(false);
+            this.tabSqlTest.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
-            this.tabPage3.ResumeLayout(false);
+            this.tabSetup.ResumeLayout(false);
             this.groupBoxSql.ResumeLayout(false);
             this.groupBoxSql.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSqlPort)).EndInit();
@@ -531,16 +531,16 @@
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabel1;
         private System.Windows.Forms.TabControl tabControl1;
-        private System.Windows.Forms.TabPage tabPage1;
+        private System.Windows.Forms.TabPage tabLog;
         private System.Windows.Forms.RichTextBox rtbxLog;
-        private System.Windows.Forms.TabPage tabPage2;
+        private System.Windows.Forms.TabPage tabSqlTest;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button button3;
         private System.Windows.Forms.Button button2;
         private System.Windows.Forms.NumericUpDown numericUpDown1;
         private System.Windows.Forms.TextBox textBox2;
-        private System.Windows.Forms.TabPage tabPage3;
+        private System.Windows.Forms.TabPage tabSetup;
         private System.Windows.Forms.GroupBox groupBoxSql;
         private System.Windows.Forms.Button btnSqlCreate;
         private System.Windows.Forms.Button btnSqlConnect;

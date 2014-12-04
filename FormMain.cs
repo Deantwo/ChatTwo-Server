@@ -33,12 +33,16 @@ namespace ChatTwo_Server
             _infoTip = SystemIcons.Information.ToBitmap();
             _infoTip = (Image)(new Bitmap(_infoTip, new Size(12, 12)));
 
-            tabPage2.Parent = null;
+            tabSqlTest.Parent = null;
         }
 
         private void FormMain_Load(object sender, EventArgs e)
         {
             _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
+            ChatTwo_Server_Protocol.MessageTransmission += _server.SendMessage;
+
+            _server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 87, 52, 32, 46 }), 9020); // My server IP and port. Just to test.
+
             bool worked = _server.Start(9020);
             if(worked)
                 WriteLog("UDP server started on port " + _server.Port + ".", Color.Green.ToArgb());
@@ -134,13 +138,13 @@ namespace ChatTwo_Server
             {
                 DatabaseCommunication.Disconnect();
                 btnSqlConnect.Text = "Start Database Connection";
-                tabPage2.Parent = null;
+                tabSqlTest.Parent = null;
             }
             else
             {
                 DatabaseCommunication.Connect(tbxSqlUser.Text, tbxSqlPassword.Text, tbxSqlAddress.Text, (int)nudSqlPort.Value);
                 btnSqlConnect.Text = "Stop Database Connection";
-                tabPage2.Parent = tabControl1;
+                tabSqlTest.Parent = tabControl1;
             }
         }
 
@@ -312,7 +316,7 @@ namespace ChatTwo_Server
             else
             {
                 // Add closing of sockets and stuff here!
-                _server.Close();
+                _server.Stop();
                 DatabaseCommunication.Disconnect();
             }
         }

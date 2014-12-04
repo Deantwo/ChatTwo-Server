@@ -95,6 +95,25 @@ namespace ChatTwo_Server
             return true;
         }
 
+        public void Stop()
+        {
+            if (_online)
+            {
+                //_threadKeepalive.Abort();
+                _threadKeepalive.Join();
+                //_threadMessageListener.Abort(); // This caused some problems.
+                _threadMessageListener.Join(); // Wait for ListenThread's next "am I online?" check.
+                _client.Close();
+            }
+        }
+
+        protected byte[] CreateAck(int hash)
+        {
+            byte[] ackTag = new byte[] { 0xCE };
+            byte[] ackBytes = ByteHelper.ConcatinateArray(ackTag, BitConverter.GetBytes(hash), ackTag);
+            return ackBytes;
+        }
+
         public void ReceiveMessage() // Threaded looping method.
         {
             while (_online)
@@ -105,7 +124,7 @@ namespace ChatTwo_Server
                     byte[] receivedBytes = _client.Receive(ref remoteSender);
                     if (!(receivedBytes != null && receivedBytes.Length != 0))
                     {
-                        if (receivedBytes[0] == 0xCE && receivedBytes.Length == 5)
+                        if (receivedBytes.Length == 6 && receivedBytes[0] == 0xCE && receivedBytes[5] == 0xCE)
                         {
                             // The received message is a ACK message.
                             int hash = ByteHelper.ToInt32(receivedBytes, 1);
@@ -116,7 +135,7 @@ namespace ChatTwo_Server
                         {
                             // Send back an ACK message.
                             int hash = receivedBytes.GetHashCode();
-                            byte[] ackBytes = ByteHelper.ConcatinateArray(new byte[] { 0xCE }, BitConverter.GetBytes(hash));
+                            byte[] ackBytes = CreateAck(hash);
                             _client.Send(ackBytes, ackBytes.Length, remoteSender);
 
                             // Check if the message is a duplicate.
@@ -168,26 +187,14 @@ namespace ChatTwo_Server
             }
         }
 
-        public void Close()
-        {
-            if (_online)
-            {
-                //_threadKeepalive.Abort();
-                _threadKeepalive.Join();
-                //_threadMessageListener.Abort(); // This caused some problems.
-                _threadMessageListener.Join(); // Wait for ListenThread's next "am I online?" check.
-                _client.Close();
-            }
-        }
-
-        public void SendMessage(byte[] data, IPEndPoint to = null)
+        public void SendMessage(object sender, MessageTransmissionEventArgs args)
         {
             ControlledMessage message = new ControlledMessage();
-            if (to != null)
-                message.Recipient = to;
+            if (args.To != null)
+                message.Recipient = args.To;
             else
                 message.Recipient = _socketServer;
-            message.Data = data;
+            message.Data = args.MessageBytes;
 
             _messageSendingControlList.Add(message);
         }
