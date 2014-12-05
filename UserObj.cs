@@ -8,7 +8,7 @@ using System.Globalization;
 namespace ChatTwo_Server
 {
 
-    class UserObj
+    public class UserObj
     {
         public int ID { set; get; }
         public string Name { set; get; }
@@ -17,19 +17,18 @@ namespace ChatTwo_Server
         public IPEndPoint Socket { set; get; }
         public DateTime LastOnline { set; get; }
         public DateTime Registered { set; get; }
+        public int Secret { set; get; }
 
-        public UserObj(int userID, string userName, string userPassword, bool userOnline, string userSocket, DateTime userLastOnline, DateTime userRegistered)
+        public UserObj()
         {
-            ID = userID;
-            Name = userName;
-            Password = userPassword;
-            Online = userOnline;
-            if (String.IsNullOrEmpty(userSocket))
+        }
+
+        public void StringSocket(string socket)
+        {
+            if (String.IsNullOrEmpty(socket))
                 Socket = null;
             else
-                Socket = CreateIPEndPoint(userSocket);
-            LastOnline = userLastOnline;
-            Registered = userRegistered;
+                Socket = CreateIPEndPoint(socket);
         }
 
         public override string ToString()

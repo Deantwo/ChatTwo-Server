@@ -468,15 +468,42 @@ namespace ChatTwo_Server
                     MySqlDataReader reader = cmd.ExecuteReader();
                     while (reader.Read())
                     {
-                        cmdResult = new UserObj(
-                            (int)reader["ID"],
-                            (string)reader["Name"],
-                            (string)reader["Password"],
-                            (bool)reader["Online"],
-                            reader["Socket"].ToString(),
-                            (DateTime)reader["LastOnline"],// _ci),
-                            (DateTime)reader["Registered"]//, _ci)
-                            );
+                        cmdResult = new UserObj();
+                        cmdResult.ID = (int)reader["ID"];
+                        cmdResult.Name = (string)reader["Name"];
+                        cmdResult.Password = (string)reader["Password"];
+                        cmdResult.Online = (bool)reader["Online"];
+                        cmdResult.StringSocket(reader["Socket"].ToString());
+                        cmdResult.LastOnline = (DateTime)reader["LastOnline"];//, _ci);
+                        cmdResult.Registered = (DateTime)reader["Registered"];//, _ci);
+                    }
+                }
+                finally
+                {
+                    Close();
+                }
+            }
+            return cmdResult;
+        }
+
+        static public UserObj LoginUser(string name, string password)
+        {
+            UserObj cmdResult = null;
+            using (MySqlCommand cmd = new MySqlCommand("SELECT `ID` FROM `Users` WHERE `Name` = @name AND `Password` = @password;", _conn))
+            {
+                // Add parameterized parameters to prevent SQL injection.
+                cmd.Parameters.AddWithValue("@name", name);
+                cmd.Parameters.AddWithValue("@password", password);
+
+                try
+                {
+                    Open();
+                    // Execute SQL command.
+                    MySqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        cmdResult = new UserObj();
+                        cmdResult.ID = (int)reader["ID"];
                     }
                 }
                 finally
