@@ -45,7 +45,7 @@ namespace ChatTwo_Server
         static public int ToInt32(byte[] bytes, int startIndex)
         {
             byte[] subBytes = ByteHelper.SubArray(bytes, startIndex, 4);
-            if (BitConverter.IsLittleEndian)
+            if (!BitConverter.IsLittleEndian)
                 Array.Reverse(subBytes);
             return BitConverter.ToInt32(subBytes, 0);
         }
