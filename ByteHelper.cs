@@ -44,10 +44,13 @@ namespace ChatTwo_Server
         /// <param name="startIndex">Index of the starting byte.</param>
         static public int ToInt32(byte[] bytes, int startIndex)
         {
-            byte[] subBytes = ByteHelper.SubArray(bytes, startIndex, 4);
             if (!BitConverter.IsLittleEndian)
-                Array.Reverse(subBytes);
-            return BitConverter.ToInt32(subBytes, 0);
+            {
+                bytes = ByteHelper.SubArray(bytes, startIndex, 4);
+                Array.Reverse(bytes);
+                startIndex = 0;
+            }
+            return BitConverter.ToInt32(bytes, startIndex);
         }
 
         /// <summary>
