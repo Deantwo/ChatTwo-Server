@@ -22,8 +22,11 @@ namespace ChatTwo_Server
 
 #if DEBUG
             this.Text += " (DEBUG)";
+            button4.Click += button4_Click;
+            ChatTwo_Server_Protocol.MessageTest += TestWrite;
+#else
+            button4.Dispose();
 #endif
-            
             _server = new UdpCommunication();
 
             notifyIcon1.BalloonTipTitle = this.Name;
@@ -40,8 +43,10 @@ namespace ChatTwo_Server
         {
             _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
             ChatTwo_Server_Protocol.MessageTransmission += _server.SendMessage;
+            DatabaseCommunication.UserStatusChange += ChatTwo_Server_Protocol.TellUserAboutContactstatusChange;
 
-            _server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 87, 52, 32, 46 }), 9020); // My server IP and port. Just to test.
+            //_server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 87, 52, 32, 46 }), 9020); // My server IP and port. Just to test.
+            _server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }),9020);
 
             bool worked = _server.Start(9020);
             if(worked)
@@ -134,6 +139,9 @@ namespace ChatTwo_Server
             tbxSqlPassword.ReadOnly = !tbxSqlPassword.ReadOnly;
             tbxSqlAddress.ReadOnly = !tbxSqlAddress.ReadOnly;
             nudSqlPort.ReadOnly = !nudSqlPort.ReadOnly;
+#if DEBUG
+            button4.Enabled = !button4.Enabled;
+#endif
             if (DatabaseCommunication.Active)
             {
                 DatabaseCommunication.Disconnect();
@@ -320,6 +328,20 @@ namespace ChatTwo_Server
                 DatabaseCommunication.Disconnect();
             }
         }
+
+#if DEBUG
+        private void TestWrite(object sender, MessageTestEventArgs e)
+        {
+            WriteLog("[" + e.Ip.ToString() + "]" + Environment.NewLine + e.Time + Environment.NewLine + e.Text);
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            ChatTwo_Client_Protocol.MessageTransmission += _server.SendMessage;
+            ChatTwo_Client_Protocol.MessageTransmissionHandler(new Message() { Type = ChatTwo_Protocol.MessageType.Login, To = 0, Text = "This is a test." });
+            ChatTwo_Client_Protocol.MessageTransmission -= _server.SendMessage;
+        }
+#endif
     }
 
     static class Global

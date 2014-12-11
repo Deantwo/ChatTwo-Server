@@ -17,7 +17,7 @@ namespace ChatTwo_Server
         public IPEndPoint Socket { set; get; }
         public DateTime LastOnline { set; get; }
         public DateTime Registered { set; get; }
-        public int Secret { set; get; }
+        public string Secret { set; get; }
 
         public UserObj()
         {

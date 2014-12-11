@@ -46,6 +46,7 @@
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabLog = new System.Windows.Forms.TabPage();
+            this.button4 = new System.Windows.Forms.Button();
             this.rtbxLog = new System.Windows.Forms.RichTextBox();
             this.tabSqlTest = new System.Windows.Forms.TabPage();
             this.button1 = new System.Windows.Forms.Button();
@@ -219,6 +220,7 @@
             // 
             // tabLog
             // 
+            this.tabLog.Controls.Add(this.button4);
             this.tabLog.Controls.Add(this.rtbxLog);
             this.tabLog.Location = new System.Drawing.Point(4, 22);
             this.tabLog.Name = "tabLog";
@@ -227,6 +229,16 @@
             this.tabLog.TabIndex = 0;
             this.tabLog.Text = "Log";
             this.tabLog.UseVisualStyleBackColor = true;
+            // 
+            // button4
+            // 
+            this.button4.Enabled = false;
+            this.button4.Location = new System.Drawing.Point(133, 140);
+            this.button4.Name = "button4";
+            this.button4.Size = new System.Drawing.Size(75, 23);
+            this.button4.TabIndex = 2;
+            this.button4.Text = "button4";
+            this.button4.UseVisualStyleBackColor = true;
             // 
             // rtbxLog
             // 
@@ -557,6 +569,7 @@
         private System.Windows.Forms.Button btnSqlUpdate;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.ToolStripMenuItem showPasswordsToolStripMenuItem;
+        private System.Windows.Forms.Button button4;
     }
 }
 

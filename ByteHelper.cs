@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace ChatTwo_Server
 {
@@ -100,6 +101,30 @@ namespace ChatTwo_Server
             }
 
             return converted;
+        }
+
+        /// <summary>
+        /// Returns the SHA1 hash of a byte array in a Base64String.
+        /// </summary>
+        /// <param name="numberID">Byte array to be hashed.</param>
+        static public string GetHashString(byte[] bytes)
+        {
+            string hash = Convert.ToBase64String(GetHashBytes(bytes));
+            return hash;
+        }
+
+        /// <summary>
+        /// Returns the SHA1 hash of a byte array in a byte array.
+        /// </summary>
+        /// <param name="numberID">Byte array to be hashed.</param>
+        static public byte[] GetHashBytes(byte[] bytes)
+        {
+            byte[] hash;
+            using (SHA1CryptoServiceProvider sha1 = new SHA1CryptoServiceProvider())
+            {
+                hash = sha1.ComputeHash(bytes);
+            }
+            return hash;
         }
 
         /// <summary>

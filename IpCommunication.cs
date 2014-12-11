@@ -60,7 +60,7 @@ namespace ChatTwo_Server
         }
 
         protected List<ControlledMessage> _messageSendingControlList = new List<ControlledMessage>();
-        protected List<int> _messageReceivingControlList = new List<int>();
+        protected List<string> _messageReceivingControlList = new List<string>();
 
         public bool Start(int serverPort)
         {
@@ -83,6 +83,7 @@ namespace ChatTwo_Server
                 System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
                 return false;
             }
+            _online = true;
             _threadMessageListener = new Thread(new ThreadStart(ReceiveMessage));
             _threadMessageListener.Name = "Listen Thread (ReceiveMessage method)";
             _threadMessageListener.Start();
@@ -99,6 +100,7 @@ namespace ChatTwo_Server
         {
             if (_online)
             {
+                _online = false;
                 //_threadKeepalive.Abort();
                 _threadKeepalive.Join();
                 //_threadMessageListener.Abort(); // This caused some problems.
@@ -107,11 +109,17 @@ namespace ChatTwo_Server
             }
         }
 
-        protected byte[] CreateAck(int hash)
+        protected byte[] CreateAck(string hash)
         {
-            byte[] ackTag = new byte[] { 0xCE };
-            byte[] ackBytes = ByteHelper.ConcatinateArray(ackTag, BitConverter.GetBytes(hash), ackTag);
+            byte[] ackTag = new byte[] { 0xCE }; // 206
+            byte[] ackBytes = ByteHelper.ConcatinateArray(ackTag, Convert.FromBase64String(hash), ackTag);
             return ackBytes;
+        }
+
+        protected string OpenAck(byte[] bytes)
+        {
+            string ackHash = Convert.ToBase64String(bytes, 1, 20);
+            return ackHash;
         }
 
         public void ReceiveMessage() // Threaded looping method.
@@ -122,19 +130,12 @@ namespace ChatTwo_Server
                 {
                     IPEndPoint remoteSender = new IPEndPoint(IPAddress.Any, 0);
                     byte[] receivedBytes = _client.Receive(ref remoteSender);
-                    if (!(receivedBytes != null && receivedBytes.Length != 0))
+                    if (receivedBytes != null && receivedBytes.Length != 0)
                     {
-                        if (receivedBytes.Length == 6 && receivedBytes[0] == 0xCE && receivedBytes[5] == 0xCE)
-                        {
-                            // The received message is a ACK message.
-                            int hash = ByteHelper.ToInt32(receivedBytes, 1);
-                            ControlledMessage message = _messageSendingControlList.Find(x => x.Hash == hash);
-                            _messageSendingControlList.Remove(message);
-                        }
-                        else
+                        if (!(receivedBytes[0] == 0xCE && receivedBytes[receivedBytes.Length - 1] == 0xCE))
                         {
                             // Send back an ACK message.
-                            int hash = receivedBytes.GetHashCode();
+                            string hash = ByteHelper.GetHashString(receivedBytes);
                             byte[] ackBytes = CreateAck(hash);
                             _client.Send(ackBytes, ackBytes.Length, remoteSender);
 
@@ -144,7 +145,7 @@ namespace ChatTwo_Server
                                 // Add the message's hash to a list so we don't react on the same message twice.
                                 _messageReceivingControlList.Add(hash);
                                 if (_messageReceivingControlList.Count > 5) // Only keep the latest 5 messages.
-                                    _messageReceivingControlList.Remove(0);
+                                    _messageReceivingControlList.RemoveAt(0);
 
                                 // Fire an MessageReceived event.
                                 MessageReceivedEventArgs args = new MessageReceivedEventArgs();
@@ -152,6 +153,13 @@ namespace ChatTwo_Server
                                 args.Data = receivedBytes;
                                 OnMessageReceived(args);
                             }
+                        }
+                        else if (_messageSendingControlList.Count != 0)
+                        {
+                            // The received message is a ACK message.
+                            string hash = OpenAck(receivedBytes);
+                            ControlledMessage message = _messageSendingControlList.Find(x => x.Hash == hash);
+                            _messageSendingControlList.Remove(message);
                         }
                     }
                 }
@@ -189,22 +197,31 @@ namespace ChatTwo_Server
 
         public void SendMessage(object sender, MessageTransmissionEventArgs args)
         {
-            ControlledMessage message = new ControlledMessage();
-            if (args.To != null)
-                message.Recipient = args.To;
+            ControlledMessage ctrlMessage = new ControlledMessage();
+            if (args.Ip != null)
+                ctrlMessage.Recipient = args.Ip;
             else
-                message.Recipient = _socketServer;
-            message.Data = args.MessageBytes;
+                ctrlMessage.Recipient = _socketServer;
+            ctrlMessage.Data = args.MessageBytes;
 
-            _messageSendingControlList.Add(message);
+            _messageSendingControlList.Add(ctrlMessage);
         }
 
         protected void MessageTransmissionControl() // Threaded method.
         {
-            while (_online)
+            try
             {
-                CheckMessageControlList();
-                Thread.Sleep(200);
+                while (_online)
+                {
+                    CheckMessageControlList();
+                    Thread.Sleep(200);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("### " + _threadMessageSending.Name + " has crashed:");
+                System.Diagnostics.Debug.WriteLine("### " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
             }
         }
 
@@ -212,12 +229,16 @@ namespace ChatTwo_Server
         {
             if (_messageSendingControlList.Count != 0)
             {
-                List<ControlledMessage> temp = _messageSendingControlList.FindAll(x => x.LastTry == null || (DateTime.Now - x.LastTry).TotalMilliseconds > 200);
-                foreach (ControlledMessage message in temp)
+                List<ControlledMessage> temp = _messageSendingControlList.FindAll(x => (x.LastTry == null || (DateTime.Now - x.LastTry).TotalMilliseconds > 400) && x.Attempts < 5);
+                foreach (ControlledMessage ctrlMessage in temp)
                 {
-                    if (SendControlledMessage(message))
+                    if (SendControlledMessage(ctrlMessage))
                     {
-                        message.LastTry = DateTime.Now;
+                        ctrlMessage.LastTry = DateTime.Now;
+                        ctrlMessage.Attempts++;
+#if DEBUG                  
+                        //_messageSendingControlList.Remove(ctrlMessage);
+#endif
                     }
                 }
             }
@@ -248,7 +269,8 @@ namespace ChatTwo_Server
     {
         public IPEndPoint Recipient { get; set; }
         public byte[] Data { get; set; }
-        public int Hash { get { return Data.GetHashCode(); } }
+        public string Hash { get { return ByteHelper.GetHashString(Data); } }
         public DateTime LastTry { get; set; }
+        public int Attempts { get; set; }
     }
 }

@@ -519,7 +519,7 @@ namespace ChatTwo_Server
             int cmdResult = 0;
             using (MySqlCommand cmd = new MySqlCommand("StatusUpdate", _conn))
             {
-                //Set up myCommand to reference stored procedure 'StatusUpdate'.
+                //Set up cmd to reference stored procedure 'StatusUpdate'.
                 cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
                 //Create input parameter (p_ID) and assign a value (id)
@@ -545,12 +545,12 @@ namespace ChatTwo_Server
             return (cmdResult != 0);
         }
 
-        static public void StatusIntervalUpdate(string connString)
+        static public void StatusIntervalUpdate(string connString) // Threaded method.
         {
             using (MySqlConnection intervalConn = new MySqlConnection(connString))
             {
                 MySqlCommand cmd = new MySqlCommand("StatusIntervalUpdate", intervalConn);
-                //Set up myCommand to reference stored procedure 'StatusIntervalUpdate'.
+                //Set up cmd to reference stored procedure 'StatusIntervalUpdate'.
                 cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
                 try
@@ -558,7 +558,15 @@ namespace ChatTwo_Server
                     while (_online)
                     {
                         intervalConn.Open();
-                        cmd.ExecuteNonQuery(); // Execute SQL command.
+                        // Execute SQL command.
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            int userId = (int)reader["ID"];
+                            Thread userStatusChange = new Thread(() => UserStatusChanged(userId, false));
+                            userStatusChange.Name = "UserChange Thread (UserStatusChanged method)";
+                            userStatusChange.Start();
+                        }
                         intervalConn.Close();
                         Thread.Sleep(1000); // 1 seconds.
                     }
@@ -576,6 +584,85 @@ namespace ChatTwo_Server
                 }
             }
         }
+
+        private static void UserStatusChanged(int userId, bool comesOnline) // Threaded method.
+        {
+            List<int> contactIds = new List<int>();
+            using (MySqlCommand cmd = new MySqlCommand("ContactsMutual", _conn))
+            {
+                //Set up cmd to reference stored procedure 'ContactsMutual'.
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                //Create input parameter (p_ID) and assign a value (id)
+                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                idParam.Direction = System.Data.ParameterDirection.Input;
+                cmd.Parameters.Add(idParam);
+
+                try
+                {
+                    Open();
+                    // Execute SQL command.
+                    MySqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        contactIds.Add((int)reader["ContactID"]);
+                    }
+                }
+                finally
+                {
+                    Close();
+                }
+            }
+            if (contactIds.Count != 0)
+            {
+                string users = String.Join(" OR `ID` = ", contactIds);
+                contactIds.Clear();
+                using (MySqlCommand cmd = new MySqlCommand("SELECT `ID` FROM `Users` WHERE `Online` = 1 AND (`ID` = " + users + ");", _conn))
+                {
+
+                    try
+                    {
+                        Open();
+                        // Execute SQL command.
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            contactIds.Add((int)reader["ID"]);
+                        }
+                    }
+                    finally
+                    {
+                        Close();
+                    }
+                }
+                foreach (int contactId in contactIds)
+                {
+                    // Fire an UserStatusChange event.
+                    OnUserStatusChangeEventArgs args = new OnUserStatusChangeEventArgs();
+                    args.TellId = contactId;
+                    args.IdIs = userId;
+                    args.Online = comesOnline;
+                    OnUserStatusChange(args);
+                }
+            }
+        }
         #endregion
+
+        private static void OnUserStatusChange(OnUserStatusChangeEventArgs e)
+        {
+            EventHandler<OnUserStatusChangeEventArgs> handler = UserStatusChange;
+            if (handler != null)
+            {
+                handler(null, e);
+            }
+        }
+        public static event EventHandler<OnUserStatusChangeEventArgs> UserStatusChange;
+    }
+
+    public class OnUserStatusChangeEventArgs : EventArgs
+    {
+        public int TellId { get; set; }
+        public int IdIs { get; set; }
+        public bool Online { get; set; }
     }
 }

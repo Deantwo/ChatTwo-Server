@@ -50,6 +50,8 @@
   <ItemGroup>
     <Compile Include="ByteHelper.cs" />
     <Compile Include="ChatTwo Protocol.cs" />
+    <Compile Include="ChatTwo_Client_Protocol.cs" />
+    <Compile Include="ChatTwo_Server_Protocol.cs" />
     <Compile Include="DatabaseCommunication.cs" />
     <Compile Include="FormMain.cs">
       <SubType>Form</SubType>
