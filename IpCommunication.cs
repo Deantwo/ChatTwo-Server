@@ -62,6 +62,14 @@ namespace ChatTwo_Server
         protected List<ControlledMessage> _messageSendingControlList = new List<ControlledMessage>();
         protected List<string> _messageReceivingControlList = new List<string>();
 
+        public static bool TestPort(int port)
+        {
+            bool isInUse = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port);
+            return !isInUse;
+
+            // Would very much like for this to test if the external port has been forwarded.
+        }
+
         public bool Start(int serverPort)
         {
             try

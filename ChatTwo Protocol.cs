@@ -23,9 +23,11 @@ namespace ChatTwo_Server
 
         public enum MessageType
         {
+            CreateUser, // When a new user is joining the server,, creating a username and password.
+            CreateUserReply, // Reply of success or failure of user creation.
             Login, // Login attempt.
             LoginReply, // Login attempt response.
-            Status, // Tell server your online status and IP address.
+            Status, // Tell server your online status and IP address. A form of keepalive.
             ContactRequest, // A request to make someone your contact.
             ContactRevoke, // Remove someone from your contacts.
             ContactStatus, // Tell client the online status and IP address of a contact.

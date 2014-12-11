@@ -27,32 +27,26 @@ namespace ChatTwo_Server
 #else
             button4.Dispose();
 #endif
+
             _server = new UdpCommunication();
+            _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
+            ChatTwo_Server_Protocol.MessageTransmission += _server.SendMessage;
+            DatabaseCommunication.UserStatusChange += ChatTwo_Server_Protocol.TellUserAboutContactstatusChange;
+
+#if DEBUG
+            //_server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 87, 52, 32, 46 }), 9020); // My server IP and port. Just to test.
+            _server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }),9020);
+#endif
 
             notifyIcon1.BalloonTipTitle = this.Name;
             notifyIcon1.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
             // Steal the system "informaion icon" and resize it.
             _infoTip = SystemIcons.Information.ToBitmap();
             _infoTip = (Image)(new Bitmap(_infoTip, new Size(12, 12)));
 
             tabSqlTest.Parent = null;
-        }
-
-        private void FormMain_Load(object sender, EventArgs e)
-        {
-            _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
-            ChatTwo_Server_Protocol.MessageTransmission += _server.SendMessage;
-            DatabaseCommunication.UserStatusChange += ChatTwo_Server_Protocol.TellUserAboutContactstatusChange;
-
-            //_server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 87, 52, 32, 46 }), 9020); // My server IP and port. Just to test.
-            _server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }),9020);
-
-            bool worked = _server.Start(9020);
-            if(worked)
-                WriteLog("UDP server started on port " + _server.Port + ".", Color.Green.ToArgb());
-            else
-                WriteLog("UDP server failed on port " + _server.Port + ".", Color.Red.ToArgb());
         }
 
         #region Database Setup
@@ -75,11 +69,12 @@ namespace ChatTwo_Server
 
             // Test the connection and access, giving the user feedback if it fails.
             DatabaseCommunication.ConnectionTestResult dbTest = DatabaseCommunication.TestConnection(tbxSqlUser.Text, tbxSqlPassword.Text, tbxSqlAddress.Text, (int)nudSqlPort.Value);
-            toolStripStatusLabel1.Text = dbTest.ToString();
+            
             // Check the result of the connetion test.
             bool connectTestSuccessful = dbTest == DatabaseCommunication.ConnectionTestResult.Successful;
             if (connectTestSuccessful)
             {
+                toolStripStatusLabel1.Text = "Database connection test: successful";
                 lblSqlConnection.Text = "Test: successful";
                 toolTip1.SetToolTip(lblSqlConnection, "");
                 btnSqlConnect.Enabled = true;
@@ -126,7 +121,7 @@ namespace ChatTwo_Server
                         break;
                 }
                 MessageBox.Show(errorMessage + errorTip, "SQL Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                toolStripStatusLabel1.Text = "SQL Error: " + errorMessage;
+                toolStripStatusLabel1.Text = "Database connection test: failed. " + errorMessage;
                 lblSqlConnection.Text = "Test: failed";
                 lblSqlConnection.Image = _infoTip;
                 toolTip1.SetToolTip(lblSqlConnection, errorMessage + errorTip);
@@ -138,10 +133,8 @@ namespace ChatTwo_Server
             tbxSqlUser.ReadOnly = !tbxSqlUser.ReadOnly;
             tbxSqlPassword.ReadOnly = !tbxSqlPassword.ReadOnly;
             tbxSqlAddress.ReadOnly = !tbxSqlAddress.ReadOnly;
-            nudSqlPort.ReadOnly = !nudSqlPort.ReadOnly;
-#if DEBUG
-            button4.Enabled = !button4.Enabled;
-#endif
+            nudSqlPort.Enabled = !nudSqlPort.Enabled;
+            btnSqlTest.Enabled = !btnSqlTest.Enabled;
             if (DatabaseCommunication.Active)
             {
                 DatabaseCommunication.Disconnect();
@@ -154,6 +147,12 @@ namespace ChatTwo_Server
                 btnSqlConnect.Text = "Stop Database Connection";
                 tabSqlTest.Parent = tabControl1;
             }
+#if DEBUG
+            if (_server.Active && DatabaseCommunication.Active)
+                button4.Enabled = true;
+            else
+                button4.Enabled = false;
+#endif
         }
 
         private void btnSqlCreate_Click(object sender, EventArgs e)
@@ -178,6 +177,89 @@ namespace ChatTwo_Server
             }
             else
                 WriteLog("Could not update the database.", Color.Red.ToArgb());
+        }
+        #endregion
+
+        #region IP Setup
+        private void tbxIp_ConnectionStringValuesChanged(object sender, EventArgs e)
+        {
+            btnIpConnect.Enabled = false;
+            lblIpConnection.Text = "Test: -";
+            lblIpConnection.Image = null;
+            btnIpTest.Enabled = chxIpUdp.Checked || chxIpTcp.Checked;
+        }
+
+        private void btnIpTest_Click(object sender, EventArgs e)
+        {
+            int port = (int)nudIpPort.Value;
+
+            tbxIp_ConnectionStringValuesChanged(null, null);
+
+            if (chxIpUdp.Checked)
+            {
+                // Basic user feedback.
+                toolStripStatusLabel1.Text = "Testing UDP port...";
+                statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
+
+                // Check the result of the connetion test.
+                bool portTestSuccessful = UdpCommunication.TestPort(port);
+                if (portTestSuccessful)
+                {
+                    toolStripStatusLabel1.Text = "UDP port test: successful";
+                    lblIpConnection.Text = "Test: successful";
+                    toolTip1.SetToolTip(lblIpConnection, "");
+                    btnIpConnect.Enabled = true;
+                }
+                else
+                {
+                    string errorMessage;
+                    string errorTip;
+
+                    errorMessage = "The UDP port \"" + port + "\" is already in use";
+                    errorTip = "." + Environment.NewLine + Environment.NewLine +
+                        "Please select another port or try to close the program that is using the port.";
+
+                    MessageBox.Show(errorMessage + errorTip, "IP Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    toolStripStatusLabel1.Text = "UDP port test: failed. " + errorMessage;
+                    lblIpConnection.Text = "Test: failed";
+                    lblIpConnection.Image = _infoTip;
+                    toolTip1.SetToolTip(lblIpConnection, errorMessage + errorTip);
+                }
+            }
+            if (chxIpTcp.Checked)
+            {
+                // Basic user feedback.
+                toolStripStatusLabel1.Text = "Testing TCP port...";
+                statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
+
+                throw new NotImplementedException("TCP is not implemented yet.");
+            }
+        }
+
+        private void btnIpConnect_Click(object sender, EventArgs e)
+        {
+            nudIpPort.Enabled = !nudIpPort.Enabled;
+            tbxIpExternalAddress.Enabled = !tbxIpExternalAddress.Enabled;
+            nudIpExternalPort.Enabled = !nudIpExternalPort.Enabled;
+            btnIpTest.Enabled = !btnIpTest.Enabled;
+            chxIpUdp.Enabled = !chxIpUdp.Enabled;
+            //chxIpTcp.Enabled = !chxIpTcp.Enabled; // Not implemented yet.
+            if (_server.Active)
+            {
+                _server.Stop();
+                btnIpConnect.Text = "Start IP Connection";
+            }
+            else
+            {
+                _server.Start((int)nudIpPort.Value);
+                btnIpConnect.Text = "Stop IP Connection";
+            }
+#if DEBUG
+            if (_server.Active && DatabaseCommunication.Active)
+                button4.Enabled = true;
+            else
+                button4.Enabled = false;
+#endif
         }
         #endregion
 

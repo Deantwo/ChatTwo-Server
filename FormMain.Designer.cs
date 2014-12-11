@@ -48,6 +48,27 @@
             this.tabLog = new System.Windows.Forms.TabPage();
             this.button4 = new System.Windows.Forms.Button();
             this.rtbxLog = new System.Windows.Forms.RichTextBox();
+            this.tabSetup = new System.Windows.Forms.TabPage();
+            this.groupBoxIP = new System.Windows.Forms.GroupBox();
+            this.nudIpPort = new System.Windows.Forms.NumericUpDown();
+            this.btnIpConnect = new System.Windows.Forms.Button();
+            this.lblIpPort = new System.Windows.Forms.Label();
+            this.btnIpTest = new System.Windows.Forms.Button();
+            this.lblIpConnection = new System.Windows.Forms.Label();
+            this.groupBoxSql = new System.Windows.Forms.GroupBox();
+            this.btnSqlUpdate = new System.Windows.Forms.Button();
+            this.btnSqlConnect = new System.Windows.Forms.Button();
+            this.btnSqlCreate = new System.Windows.Forms.Button();
+            this.nudSqlPort = new System.Windows.Forms.NumericUpDown();
+            this.lblSqlConnection = new System.Windows.Forms.Label();
+            this.lblSqlServer = new System.Windows.Forms.Label();
+            this.tbxSqlAddress = new System.Windows.Forms.TextBox();
+            this.btnSqlTest = new System.Windows.Forms.Button();
+            this.lblSqlPort = new System.Windows.Forms.Label();
+            this.lblSqlUser = new System.Windows.Forms.Label();
+            this.lblSqlPassword = new System.Windows.Forms.Label();
+            this.tbxSqlUser = new System.Windows.Forms.TextBox();
+            this.tbxSqlPassword = new System.Windows.Forms.TextBox();
             this.tabSqlTest = new System.Windows.Forms.TabPage();
             this.button1 = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
@@ -55,32 +76,26 @@
             this.button2 = new System.Windows.Forms.Button();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.textBox2 = new System.Windows.Forms.TextBox();
-            this.tabSetup = new System.Windows.Forms.TabPage();
-            this.groupBoxSql = new System.Windows.Forms.GroupBox();
-            this.btnSqlUpdate = new System.Windows.Forms.Button();
-            this.btnSqlConnect = new System.Windows.Forms.Button();
-            this.btnSqlCreate = new System.Windows.Forms.Button();
-            this.nudSqlPort = new System.Windows.Forms.NumericUpDown();
-            this.lblSqlConnection = new System.Windows.Forms.Label();
-            this.btnSqlTest = new System.Windows.Forms.Button();
-            this.lblSqlPort = new System.Windows.Forms.Label();
-            this.lblSqlUser = new System.Windows.Forms.Label();
-            this.lblSqlPassword = new System.Windows.Forms.Label();
-            this.tbxSqlUser = new System.Windows.Forms.TextBox();
-            this.lblSqlServer = new System.Windows.Forms.Label();
-            this.tbxSqlPassword = new System.Windows.Forms.TextBox();
-            this.tbxSqlAddress = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.lblIpExternalPort = new System.Windows.Forms.Label();
+            this.tbxIpExternalAddress = new System.Windows.Forms.TextBox();
+            this.lblIpExternalAddress = new System.Windows.Forms.Label();
+            this.nudIpExternalPort = new System.Windows.Forms.NumericUpDown();
+            this.chxIpUdp = new System.Windows.Forms.CheckBox();
+            this.chxIpTcp = new System.Windows.Forms.CheckBox();
             this.contextMenuStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.tabControl1.SuspendLayout();
             this.tabLog.SuspendLayout();
-            this.tabSqlTest.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.tabSetup.SuspendLayout();
+            this.groupBoxIP.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIpPort)).BeginInit();
             this.groupBoxSql.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSqlPort)).BeginInit();
+            this.tabSqlTest.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIpExternalPort)).BeginInit();
             this.SuspendLayout();
             // 
             // notifyIcon1
@@ -128,7 +143,7 @@
             this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(309, 24);
+            this.menuStrip1.Size = new System.Drawing.Size(466, 24);
             this.menuStrip1.TabIndex = 0;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -190,18 +205,18 @@
             this.toolStripStatusLabel1});
             this.statusStrip1.Location = new System.Drawing.Point(0, 338);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(309, 24);
+            this.statusStrip1.Size = new System.Drawing.Size(466, 24);
             this.statusStrip1.TabIndex = 2;
             this.statusStrip1.Text = "statusStrip1";
             // 
             // toolStripStatusLabel1
             // 
-            this.toolStripStatusLabel1.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top) 
-            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
-            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
+            this.toolStripStatusLabel1.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top)
+                        | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right)
+                        | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.toolStripStatusLabel1.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenOuter;
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(294, 19);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(451, 19);
             this.toolStripStatusLabel1.Spring = true;
             this.toolStripStatusLabel1.Text = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -209,13 +224,13 @@
             // tabControl1
             // 
             this.tabControl1.Controls.Add(this.tabLog);
-            this.tabControl1.Controls.Add(this.tabSqlTest);
             this.tabControl1.Controls.Add(this.tabSetup);
+            this.tabControl1.Controls.Add(this.tabSqlTest);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 24);
             this.tabControl1.Name = "tabControl1";
             this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(309, 314);
+            this.tabControl1.Size = new System.Drawing.Size(466, 314);
             this.tabControl1.TabIndex = 10;
             // 
             // tabLog
@@ -225,7 +240,7 @@
             this.tabLog.Location = new System.Drawing.Point(4, 22);
             this.tabLog.Name = "tabLog";
             this.tabLog.Padding = new System.Windows.Forms.Padding(3);
-            this.tabLog.Size = new System.Drawing.Size(301, 288);
+            this.tabLog.Size = new System.Drawing.Size(458, 288);
             this.tabLog.TabIndex = 0;
             this.tabLog.Text = "Log";
             this.tabLog.UseVisualStyleBackColor = true;
@@ -248,87 +263,105 @@
             this.rtbxLog.Location = new System.Drawing.Point(3, 3);
             this.rtbxLog.Name = "rtbxLog";
             this.rtbxLog.ReadOnly = true;
-            this.rtbxLog.Size = new System.Drawing.Size(295, 282);
+            this.rtbxLog.Size = new System.Drawing.Size(452, 282);
             this.rtbxLog.TabIndex = 1;
             this.rtbxLog.Text = "";
             // 
-            // tabSqlTest
-            // 
-            this.tabSqlTest.Controls.Add(this.button1);
-            this.tabSqlTest.Controls.Add(this.textBox1);
-            this.tabSqlTest.Controls.Add(this.button3);
-            this.tabSqlTest.Controls.Add(this.button2);
-            this.tabSqlTest.Controls.Add(this.numericUpDown1);
-            this.tabSqlTest.Controls.Add(this.textBox2);
-            this.tabSqlTest.Location = new System.Drawing.Point(4, 22);
-            this.tabSqlTest.Name = "tabSqlTest";
-            this.tabSqlTest.Padding = new System.Windows.Forms.Padding(3);
-            this.tabSqlTest.Size = new System.Drawing.Size(301, 288);
-            this.tabSqlTest.TabIndex = 1;
-            this.tabSqlTest.Text = "Manual Management";
-            this.tabSqlTest.UseVisualStyleBackColor = true;
-            // 
-            // button1
-            // 
-            this.button1.Location = new System.Drawing.Point(6, 6);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 3;
-            this.button1.Text = "CreateUser";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.CreateUser_Click);
-            // 
-            // textBox1
-            // 
-            this.textBox1.Location = new System.Drawing.Point(87, 8);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(100, 20);
-            this.textBox1.TabIndex = 4;
-            // 
-            // button3
-            // 
-            this.button3.Location = new System.Drawing.Point(6, 64);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(75, 23);
-            this.button3.TabIndex = 8;
-            this.button3.Text = "StatusUpdate";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.Click += new System.EventHandler(this.StatusUpdate_Click);
-            // 
-            // button2
-            // 
-            this.button2.Location = new System.Drawing.Point(6, 35);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 5;
-            this.button2.Text = "ReadUser";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.ReadUser_Click);
-            // 
-            // numericUpDown1
-            // 
-            this.numericUpDown1.Location = new System.Drawing.Point(87, 49);
-            this.numericUpDown1.Name = "numericUpDown1";
-            this.numericUpDown1.Size = new System.Drawing.Size(52, 20);
-            this.numericUpDown1.TabIndex = 7;
-            // 
-            // textBox2
-            // 
-            this.textBox2.Location = new System.Drawing.Point(193, 8);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(100, 20);
-            this.textBox2.TabIndex = 6;
-            // 
             // tabSetup
             // 
+            this.tabSetup.Controls.Add(this.groupBoxIP);
             this.tabSetup.Controls.Add(this.groupBoxSql);
             this.tabSetup.Location = new System.Drawing.Point(4, 22);
             this.tabSetup.Name = "tabSetup";
             this.tabSetup.Padding = new System.Windows.Forms.Padding(3);
-            this.tabSetup.Size = new System.Drawing.Size(301, 288);
+            this.tabSetup.Size = new System.Drawing.Size(458, 288);
             this.tabSetup.TabIndex = 2;
             this.tabSetup.Text = "Setup";
             this.tabSetup.UseVisualStyleBackColor = true;
+            // 
+            // groupBoxIP
+            // 
+            this.groupBoxIP.Controls.Add(this.chxIpTcp);
+            this.groupBoxIP.Controls.Add(this.chxIpUdp);
+            this.groupBoxIP.Controls.Add(this.nudIpPort);
+            this.groupBoxIP.Controls.Add(this.btnIpConnect);
+            this.groupBoxIP.Controls.Add(this.lblIpPort);
+            this.groupBoxIP.Controls.Add(this.nudIpExternalPort);
+            this.groupBoxIP.Controls.Add(this.btnIpTest);
+            this.groupBoxIP.Controls.Add(this.lblIpConnection);
+            this.groupBoxIP.Controls.Add(this.lblIpExternalAddress);
+            this.groupBoxIP.Controls.Add(this.tbxIpExternalAddress);
+            this.groupBoxIP.Controls.Add(this.lblIpExternalPort);
+            this.groupBoxIP.Location = new System.Drawing.Point(232, 6);
+            this.groupBoxIP.Name = "groupBoxIP";
+            this.groupBoxIP.Size = new System.Drawing.Size(218, 213);
+            this.groupBoxIP.TabIndex = 6;
+            this.groupBoxIP.TabStop = false;
+            this.groupBoxIP.Text = "IP Settings";
+            // 
+            // nudIpPort
+            // 
+            this.nudIpPort.Location = new System.Drawing.Point(155, 33);
+            this.nudIpPort.Maximum = new decimal(new int[] {
+            49151,
+            0,
+            0,
+            0});
+            this.nudIpPort.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudIpPort.Name = "nudIpPort";
+            this.nudIpPort.Size = new System.Drawing.Size(57, 20);
+            this.nudIpPort.TabIndex = 10;
+            this.nudIpPort.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.nudIpPort.Value = new decimal(new int[] {
+            9020,
+            0,
+            0,
+            0});
+            this.nudIpPort.ValueChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
+            // 
+            // btnIpConnect
+            // 
+            this.btnIpConnect.Enabled = false;
+            this.btnIpConnect.Location = new System.Drawing.Point(6, 126);
+            this.btnIpConnect.Name = "btnIpConnect";
+            this.btnIpConnect.Size = new System.Drawing.Size(206, 23);
+            this.btnIpConnect.TabIndex = 6;
+            this.btnIpConnect.Text = "Start IP Connection";
+            this.btnIpConnect.UseVisualStyleBackColor = true;
+            this.btnIpConnect.Click += new System.EventHandler(this.btnIpConnect_Click);
+            // 
+            // lblIpPort
+            // 
+            this.lblIpPort.AutoSize = true;
+            this.lblIpPort.Location = new System.Drawing.Point(152, 17);
+            this.lblIpPort.Name = "lblIpPort";
+            this.lblIpPort.Size = new System.Drawing.Size(47, 13);
+            this.lblIpPort.TabIndex = 3;
+            this.lblIpPort.Text = "Int. Port:";
+            // 
+            // btnIpTest
+            // 
+            this.btnIpTest.Location = new System.Drawing.Point(6, 97);
+            this.btnIpTest.Name = "btnIpTest";
+            this.btnIpTest.Size = new System.Drawing.Size(100, 23);
+            this.btnIpTest.TabIndex = 3;
+            this.btnIpTest.Text = "Test Connection";
+            this.btnIpTest.UseVisualStyleBackColor = true;
+            this.btnIpTest.Click += new System.EventHandler(this.btnIpTest_Click);
+            // 
+            // lblIpConnection
+            // 
+            this.lblIpConnection.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
+            this.lblIpConnection.Location = new System.Drawing.Point(112, 94);
+            this.lblIpConnection.Name = "lblIpConnection";
+            this.lblIpConnection.Size = new System.Drawing.Size(100, 29);
+            this.lblIpConnection.TabIndex = 4;
+            this.lblIpConnection.Text = "Test: -";
+            this.lblIpConnection.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // groupBoxSql
             // 
@@ -337,14 +370,14 @@
             this.groupBoxSql.Controls.Add(this.btnSqlCreate);
             this.groupBoxSql.Controls.Add(this.nudSqlPort);
             this.groupBoxSql.Controls.Add(this.lblSqlConnection);
+            this.groupBoxSql.Controls.Add(this.lblSqlServer);
+            this.groupBoxSql.Controls.Add(this.tbxSqlAddress);
             this.groupBoxSql.Controls.Add(this.btnSqlTest);
             this.groupBoxSql.Controls.Add(this.lblSqlPort);
             this.groupBoxSql.Controls.Add(this.lblSqlUser);
             this.groupBoxSql.Controls.Add(this.lblSqlPassword);
             this.groupBoxSql.Controls.Add(this.tbxSqlUser);
-            this.groupBoxSql.Controls.Add(this.lblSqlServer);
             this.groupBoxSql.Controls.Add(this.tbxSqlPassword);
-            this.groupBoxSql.Controls.Add(this.tbxSqlAddress);
             this.groupBoxSql.Location = new System.Drawing.Point(8, 6);
             this.groupBoxSql.Name = "groupBoxSql";
             this.groupBoxSql.Size = new System.Drawing.Size(218, 213);
@@ -387,7 +420,7 @@
             // 
             // nudSqlPort
             // 
-            this.nudSqlPort.Location = new System.Drawing.Point(155, 72);
+            this.nudSqlPort.Location = new System.Drawing.Point(155, 32);
             this.nudSqlPort.Maximum = new decimal(new int[] {
             49151,
             0,
@@ -419,6 +452,24 @@
             this.lblSqlConnection.Text = "Test: -";
             this.lblSqlConnection.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
+            // lblSqlServer
+            // 
+            this.lblSqlServer.AutoSize = true;
+            this.lblSqlServer.Location = new System.Drawing.Point(6, 16);
+            this.lblSqlServer.Name = "lblSqlServer";
+            this.lblSqlServer.Size = new System.Drawing.Size(79, 13);
+            this.lblSqlServer.TabIndex = 2;
+            this.lblSqlServer.Text = "Server Address";
+            // 
+            // tbxSqlAddress
+            // 
+            this.tbxSqlAddress.Location = new System.Drawing.Point(6, 32);
+            this.tbxSqlAddress.Name = "tbxSqlAddress";
+            this.tbxSqlAddress.Size = new System.Drawing.Size(143, 20);
+            this.tbxSqlAddress.TabIndex = 1;
+            this.tbxSqlAddress.Text = "localhost";
+            this.tbxSqlAddress.TextChanged += new System.EventHandler(this.tbxSql_ConnectionStringValuesChanged);
+            // 
             // btnSqlTest
             // 
             this.btnSqlTest.Location = new System.Drawing.Point(6, 97);
@@ -432,7 +483,7 @@
             // lblSqlPort
             // 
             this.lblSqlPort.AutoSize = true;
-            this.lblSqlPort.Location = new System.Drawing.Point(152, 55);
+            this.lblSqlPort.Location = new System.Drawing.Point(152, 16);
             this.lblSqlPort.Name = "lblSqlPort";
             this.lblSqlPort.Size = new System.Drawing.Size(29, 13);
             this.lblSqlPort.TabIndex = 3;
@@ -441,7 +492,7 @@
             // lblSqlUser
             // 
             this.lblSqlUser.AutoSize = true;
-            this.lblSqlUser.Location = new System.Drawing.Point(6, 16);
+            this.lblSqlUser.Location = new System.Drawing.Point(6, 55);
             this.lblSqlUser.Name = "lblSqlUser";
             this.lblSqlUser.Size = new System.Drawing.Size(29, 13);
             this.lblSqlUser.TabIndex = 2;
@@ -450,7 +501,7 @@
             // lblSqlPassword
             // 
             this.lblSqlPassword.AutoSize = true;
-            this.lblSqlPassword.Location = new System.Drawing.Point(109, 16);
+            this.lblSqlPassword.Location = new System.Drawing.Point(109, 55);
             this.lblSqlPassword.Name = "lblSqlPassword";
             this.lblSqlPassword.Size = new System.Drawing.Size(53, 13);
             this.lblSqlPassword.TabIndex = 2;
@@ -458,54 +509,177 @@
             // 
             // tbxSqlUser
             // 
-            this.tbxSqlUser.Location = new System.Drawing.Point(6, 32);
+            this.tbxSqlUser.Location = new System.Drawing.Point(6, 71);
             this.tbxSqlUser.Name = "tbxSqlUser";
             this.tbxSqlUser.Size = new System.Drawing.Size(100, 20);
             this.tbxSqlUser.TabIndex = 1;
             this.tbxSqlUser.Text = "root";
             this.tbxSqlUser.TextChanged += new System.EventHandler(this.tbxSql_ConnectionStringValuesChanged);
             // 
-            // lblSqlServer
-            // 
-            this.lblSqlServer.AutoSize = true;
-            this.lblSqlServer.Location = new System.Drawing.Point(6, 55);
-            this.lblSqlServer.Name = "lblSqlServer";
-            this.lblSqlServer.Size = new System.Drawing.Size(79, 13);
-            this.lblSqlServer.TabIndex = 2;
-            this.lblSqlServer.Text = "Server Address";
-            // 
             // tbxSqlPassword
             // 
-            this.tbxSqlPassword.Location = new System.Drawing.Point(112, 32);
+            this.tbxSqlPassword.Location = new System.Drawing.Point(112, 71);
             this.tbxSqlPassword.Name = "tbxSqlPassword";
             this.tbxSqlPassword.Size = new System.Drawing.Size(100, 20);
             this.tbxSqlPassword.TabIndex = 1;
             this.tbxSqlPassword.UseSystemPasswordChar = true;
             this.tbxSqlPassword.TextChanged += new System.EventHandler(this.tbxSql_ConnectionStringValuesChanged);
             // 
-            // tbxSqlAddress
+            // tabSqlTest
             // 
-            this.tbxSqlAddress.Location = new System.Drawing.Point(6, 71);
-            this.tbxSqlAddress.Name = "tbxSqlAddress";
-            this.tbxSqlAddress.Size = new System.Drawing.Size(143, 20);
-            this.tbxSqlAddress.TabIndex = 1;
-            this.tbxSqlAddress.Text = "localhost";
-            this.tbxSqlAddress.TextChanged += new System.EventHandler(this.tbxSql_ConnectionStringValuesChanged);
+            this.tabSqlTest.Controls.Add(this.button1);
+            this.tabSqlTest.Controls.Add(this.textBox1);
+            this.tabSqlTest.Controls.Add(this.button3);
+            this.tabSqlTest.Controls.Add(this.button2);
+            this.tabSqlTest.Controls.Add(this.numericUpDown1);
+            this.tabSqlTest.Controls.Add(this.textBox2);
+            this.tabSqlTest.Location = new System.Drawing.Point(4, 22);
+            this.tabSqlTest.Name = "tabSqlTest";
+            this.tabSqlTest.Padding = new System.Windows.Forms.Padding(3);
+            this.tabSqlTest.Size = new System.Drawing.Size(458, 288);
+            this.tabSqlTest.TabIndex = 3;
+            this.tabSqlTest.Text = "Manual SQL";
+            this.tabSqlTest.UseVisualStyleBackColor = true;
+            // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(8, 6);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 9;
+            this.button1.Text = "CreateUser";
+            this.button1.UseVisualStyleBackColor = true;
+            // 
+            // textBox1
+            // 
+            this.textBox1.Location = new System.Drawing.Point(89, 8);
+            this.textBox1.Name = "textBox1";
+            this.textBox1.Size = new System.Drawing.Size(100, 20);
+            this.textBox1.TabIndex = 10;
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(8, 64);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(75, 23);
+            this.button3.TabIndex = 14;
+            this.button3.Text = "StatusUpdate";
+            this.button3.UseVisualStyleBackColor = true;
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(8, 35);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(75, 23);
+            this.button2.TabIndex = 11;
+            this.button2.Text = "ReadUser";
+            this.button2.UseVisualStyleBackColor = true;
+            // 
+            // numericUpDown1
+            // 
+            this.numericUpDown1.Location = new System.Drawing.Point(89, 49);
+            this.numericUpDown1.Name = "numericUpDown1";
+            this.numericUpDown1.Size = new System.Drawing.Size(52, 20);
+            this.numericUpDown1.TabIndex = 13;
+            // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(195, 8);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(100, 20);
+            this.textBox2.TabIndex = 12;
+            // 
+            // lblIpExternalPort
+            // 
+            this.lblIpExternalPort.AutoSize = true;
+            this.lblIpExternalPort.Location = new System.Drawing.Point(152, 55);
+            this.lblIpExternalPort.Name = "lblIpExternalPort";
+            this.lblIpExternalPort.Size = new System.Drawing.Size(50, 13);
+            this.lblIpExternalPort.TabIndex = 3;
+            this.lblIpExternalPort.Text = "Ext. Port:";
+            // 
+            // tbxIpExternalAddress
+            // 
+            this.tbxIpExternalAddress.Location = new System.Drawing.Point(6, 71);
+            this.tbxIpExternalAddress.Name = "tbxIpExternalAddress";
+            this.tbxIpExternalAddress.Size = new System.Drawing.Size(143, 20);
+            this.tbxIpExternalAddress.TabIndex = 1;
+            this.tbxIpExternalAddress.Text = "87.52.32.46";
+            this.tbxIpExternalAddress.TextChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
+            // 
+            // lblIpExternalAddress
+            // 
+            this.lblIpExternalAddress.AutoSize = true;
+            this.lblIpExternalAddress.Location = new System.Drawing.Point(6, 55);
+            this.lblIpExternalAddress.Name = "lblIpExternalAddress";
+            this.lblIpExternalAddress.Size = new System.Drawing.Size(66, 13);
+            this.lblIpExternalAddress.TabIndex = 2;
+            this.lblIpExternalAddress.Text = "Ext. Address";
+            // 
+            // nudIpExternalPort
+            // 
+            this.nudIpExternalPort.Location = new System.Drawing.Point(155, 71);
+            this.nudIpExternalPort.Maximum = new decimal(new int[] {
+            49151,
+            0,
+            0,
+            0});
+            this.nudIpExternalPort.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudIpExternalPort.Name = "nudIpExternalPort";
+            this.nudIpExternalPort.Size = new System.Drawing.Size(57, 20);
+            this.nudIpExternalPort.TabIndex = 10;
+            this.nudIpExternalPort.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.nudIpExternalPort.Value = new decimal(new int[] {
+            9020,
+            0,
+            0,
+            0});
+            this.nudIpExternalPort.ValueChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
+            // 
+            // chxIpUdp
+            // 
+            this.chxIpUdp.AutoSize = true;
+            this.chxIpUdp.Checked = true;
+            this.chxIpUdp.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chxIpUdp.Location = new System.Drawing.Point(9, 32);
+            this.chxIpUdp.Name = "chxIpUdp";
+            this.chxIpUdp.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.chxIpUdp.Size = new System.Drawing.Size(49, 17);
+            this.chxIpUdp.TabIndex = 11;
+            this.chxIpUdp.Text = "UDP";
+            this.chxIpUdp.UseVisualStyleBackColor = true;
+            this.chxIpUdp.CheckedChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
+            // 
+            // chxIpTcp
+            // 
+            this.chxIpTcp.AutoSize = true;
+            this.chxIpTcp.Enabled = false;
+            this.chxIpTcp.Location = new System.Drawing.Point(74, 33);
+            this.chxIpTcp.Name = "chxIpTcp";
+            this.chxIpTcp.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.chxIpTcp.Size = new System.Drawing.Size(47, 17);
+            this.chxIpTcp.TabIndex = 11;
+            this.chxIpTcp.Text = "TCP";
+            this.chxIpTcp.UseVisualStyleBackColor = true;
+            this.chxIpTcp.CheckedChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
             // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(309, 362);
+            this.ClientSize = new System.Drawing.Size(466, 362);
             this.Controls.Add(this.tabControl1);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
-            this.MinimumSize = new System.Drawing.Size(325, 400);
+            this.MinimumSize = new System.Drawing.Size(482, 400);
             this.Name = "FormMain";
             this.Text = "ChatTwo Server";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FormMain_FormClosing);
-            this.Load += new System.EventHandler(this.FormMain_Load);
             this.Resize += new System.EventHandler(this.FormMain_Resize);
             this.contextMenuStrip1.ResumeLayout(false);
             this.menuStrip1.ResumeLayout(false);
@@ -514,13 +688,17 @@
             this.statusStrip1.PerformLayout();
             this.tabControl1.ResumeLayout(false);
             this.tabLog.ResumeLayout(false);
-            this.tabSqlTest.ResumeLayout(false);
-            this.tabSqlTest.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             this.tabSetup.ResumeLayout(false);
+            this.groupBoxIP.ResumeLayout(false);
+            this.groupBoxIP.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIpPort)).EndInit();
             this.groupBoxSql.ResumeLayout(false);
             this.groupBoxSql.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSqlPort)).EndInit();
+            this.tabSqlTest.ResumeLayout(false);
+            this.tabSqlTest.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIpExternalPort)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -545,13 +723,6 @@
         private System.Windows.Forms.TabControl tabControl1;
         private System.Windows.Forms.TabPage tabLog;
         private System.Windows.Forms.RichTextBox rtbxLog;
-        private System.Windows.Forms.TabPage tabSqlTest;
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.TextBox textBox1;
-        private System.Windows.Forms.Button button3;
-        private System.Windows.Forms.Button button2;
-        private System.Windows.Forms.NumericUpDown numericUpDown1;
-        private System.Windows.Forms.TextBox textBox2;
         private System.Windows.Forms.TabPage tabSetup;
         private System.Windows.Forms.GroupBox groupBoxSql;
         private System.Windows.Forms.Button btnSqlCreate;
@@ -570,6 +741,25 @@
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.ToolStripMenuItem showPasswordsToolStripMenuItem;
         private System.Windows.Forms.Button button4;
+        private System.Windows.Forms.GroupBox groupBoxIP;
+        private System.Windows.Forms.NumericUpDown nudIpPort;
+        private System.Windows.Forms.Button btnIpConnect;
+        private System.Windows.Forms.Label lblIpPort;
+        private System.Windows.Forms.Button btnIpTest;
+        private System.Windows.Forms.Label lblIpConnection;
+        private System.Windows.Forms.TabPage tabSqlTest;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Button button3;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.NumericUpDown numericUpDown1;
+        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.NumericUpDown nudIpExternalPort;
+        private System.Windows.Forms.Label lblIpExternalAddress;
+        private System.Windows.Forms.TextBox tbxIpExternalAddress;
+        private System.Windows.Forms.Label lblIpExternalPort;
+        private System.Windows.Forms.CheckBox chxIpTcp;
+        private System.Windows.Forms.CheckBox chxIpUdp;
     }
 }
 
