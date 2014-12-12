@@ -318,7 +318,8 @@ namespace ChatTwo_Server
         #region Database Test Commands
         private void CreateUser_Click(object sender, EventArgs e)
         {
-            bool worked = DatabaseCommunication.CreateUser(textBox1.Text, textBox2.Text);
+            string hashedPassword = ByteHelper.GetHashString(Encoding.Unicode.GetBytes(textBox2.Text));
+            bool worked = DatabaseCommunication.CreateUser(textBox1.Text, hashedPassword);
             if (worked)
                 WriteLog("User created: " + textBox1.Text, Color.Blue.ToArgb());
         }
