@@ -22,12 +22,6 @@ namespace ChatTwo_Server
             set { _socketLocal = value; }
             get { return _socketLocal; }
         }
-        protected IPEndPoint _socketServer;
-        public IPEndPoint SocketServer
-        {
-            set { _socketServer = value; }
-            get { return _socketServer; }
-        }
 
         protected virtual void OnMessageReceived(MessageReceivedEventArgs e)
         {
@@ -62,12 +56,14 @@ namespace ChatTwo_Server
         protected List<ControlledMessage> _messageSendingControlList = new List<ControlledMessage>();
         protected List<string> _messageReceivingControlList = new List<string>();
 
-        public static bool TestPort(int port)
+        public static bool TestPortforward(IPEndPoint address)
         {
-            bool isInUse = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port);
-            return !isInUse;
+            //// Check if the port number is in use.
+            //bool isInUse = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port);
 
-            // Would very much like for this to test if the external port has been forwarded.
+            // Not implemented yet.
+
+            return false;
         }
 
         public bool Start(int serverPort)
@@ -206,10 +202,7 @@ namespace ChatTwo_Server
         public void SendMessage(object sender, MessageTransmissionEventArgs args)
         {
             ControlledMessage ctrlMessage = new ControlledMessage();
-            if (args.Ip != null)
-                ctrlMessage.Recipient = args.Ip;
-            else
-                ctrlMessage.Recipient = _socketServer;
+            ctrlMessage.Recipient = args.Ip;
             ctrlMessage.Data = args.MessageBytes;
 
             _messageSendingControlList.Add(ctrlMessage);

@@ -11,15 +11,8 @@ namespace ChatTwo_Server
     {
         const byte _version = 0x00;
 
-        public const int MacByteLength = 20;
+        public const int HashByteLength = 20;
         public const int SignatureByteLength = 2;
-
-        private static List<UserObj> _users = new List<UserObj>();
-        public static List<UserObj> Users
-        {
-            get { return _users; }
-            set { _users = value; }
-        }
 
         public enum MessageType
         {
@@ -35,30 +28,23 @@ namespace ChatTwo_Server
             RelayMessage // Request for the server to relay a message to another user. Used if peer-to-peer fail?
         }
 
-        public static bool ValidateSignature(byte[] bytes)
+        public static bool ValidateMac(byte[] bytes, string sharedSecret)
         {
-            string mac = Convert.ToBase64String(bytes, 2, MacByteLength);
+            string mac = Convert.ToBase64String(bytes, 2, HashByteLength);
 #if DEBUG
-            string test = CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + MacByteLength), _users[0].Secret);
+            string test = CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + HashByteLength), sharedSecret);
 #endif
-            bool macValid = _users.Any(x => CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + MacByteLength), x.Secret) == mac);
+            bool macValid = CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + HashByteLength), sharedSecret) == mac;
             return macValid;
         }
 
-        public static byte[] AddSignature(byte[] bytes, int to)
+        public static byte[] AddSignatureAndMac(byte[] bytes, string sharedSecret)
         {
             TimeSpan sinceMidnight = DateTime.Now - DateTime.Today;
             int timez = (int)sinceMidnight.TotalMilliseconds;
             bytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(timez), bytes); // Add a milisecond timestamp to the meassage.
 
-            byte[] macBytes;
-            if ((MessageType)bytes[4] == MessageType.Login)
-            {
-                ChatTwo_Client_Protocol.TempLoginSecret = ByteHelper.GetHashString(bytes);
-                macBytes = Convert.FromBase64String(CreateMac(bytes, ChatTwo_Client_Protocol.TempLoginSecret));
-            }
-            else
-                macBytes = Convert.FromBase64String(CreateMac(bytes, _users.Find(x => x.ID == to).Secret));
+            byte[] macBytes = Convert.FromBase64String(CreateMac(bytes, sharedSecret));
             
             byte[] singatureBytes = new byte[] { 0x92, _version }; // Signature byte and version byte.
             
@@ -66,9 +52,9 @@ namespace ChatTwo_Server
             return bytes;
         }
 
-        public static byte[] RemoveSignature(byte[] bytes)
+        public static byte[] RemoveSignatureAndMac(byte[] bytes)
         {
-            bytes = ByteHelper.SubArray(bytes, SignatureByteLength + MacByteLength); // Remove the signature, the version number and the MAC.
+            bytes = ByteHelper.SubArray(bytes, SignatureByteLength + HashByteLength); // Remove the signature, the version number and the MAC.
             return bytes;
         }
 
@@ -79,24 +65,14 @@ namespace ChatTwo_Server
 
         public static Message MessageReceivedHandler(MessageReceivedEventArgs args)
         {
-            if (args.Data[0] == 0x92 && ValidateSignature(args.Data))
-            {
-                args.Data = ChatTwo_Protocol.RemoveSignature(args.Data);
+            args.Data = ChatTwo_Protocol.RemoveSignatureAndMac(args.Data);
 
-                Message messageObj = new Message();
-                messageObj.Ip = args.Sender;
-                messageObj.Type = (MessageType)args.Data[4];
-                messageObj.Data = args.Data;
+            Message messageObj = new Message();
+            messageObj.Ip = args.Sender;
+            messageObj.Type = (MessageType)args.Data[4];
+            messageObj.Data = args.Data;
 
-                return messageObj;
-            }
-            else
-#if DEBUG
-                return new Message() { From = 0, Ip = new IPEndPoint(new IPAddress(new byte[] { 127, 0, 0, 1 }), 9020), Data = Encoding.Unicode.GetBytes("test failed! I love Valoree ♥") };
-#else
-                throw new NotImplementedException("Could not validate the received message.");
-                // Need to add a simple debug message here, but this works as a great breakpoint until then.
-#endif
+            return messageObj;
         }
 
         public static byte[] MessageTransmissionHandler(Message message)
@@ -113,8 +89,6 @@ namespace ChatTwo_Server
 #if DEBUG
             string test1 = Encoding.Unicode.GetString(ByteHelper.SubArray(messageBytes, 1));
 #endif
-
-            messageBytes = ChatTwo_Protocol.AddSignature(messageBytes, message.To);
 #if DEBUG
             string test2 = Encoding.Unicode.GetString(ByteHelper.SubArray(messageBytes, 1));
 #endif

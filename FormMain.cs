@@ -22,21 +22,12 @@ namespace ChatTwo_Server
 
 #if DEBUG
             this.Text += " (DEBUG)";
-            button4.Click += button4_Click;
-            ChatTwo_Server_Protocol.MessageTest += TestWrite;
-#else
-            button4.Dispose();
 #endif
 
             _server = new UdpCommunication();
             _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
             ChatTwo_Server_Protocol.MessageTransmission += _server.SendMessage;
             DatabaseCommunication.UserStatusChange += ChatTwo_Server_Protocol.TellUserAboutContactstatusChange;
-
-#if DEBUG
-            //_server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 87, 52, 32, 46 }), 9020); // My server IP and port. Just to test.
-            _server.SocketServer = new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }),9020);
-#endif
 
             notifyIcon1.BalloonTipTitle = this.Name;
             notifyIcon1.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
@@ -147,12 +138,6 @@ namespace ChatTwo_Server
                 btnSqlConnect.Text = "Stop Database Connection";
                 tabSqlTest.Parent = tabControl1;
             }
-#if DEBUG
-            if (_server.Active && DatabaseCommunication.Active)
-                button4.Enabled = true;
-            else
-                button4.Enabled = false;
-#endif
         }
 
         private void btnSqlCreate_Click(object sender, EventArgs e)
@@ -181,66 +166,14 @@ namespace ChatTwo_Server
         #endregion
 
         #region IP Setup
-        private void tbxIp_ConnectionStringValuesChanged(object sender, EventArgs e)
+        private void chxIp_CheckedChanged(object sender, EventArgs e)
         {
-            btnIpConnect.Enabled = false;
-            lblIpConnection.Text = "Test: -";
-            lblIpConnection.Image = null;
             btnIpTest.Enabled = chxIpUdp.Checked || chxIpTcp.Checked;
-        }
-
-        private void btnIpTest_Click(object sender, EventArgs e)
-        {
-            int port = (int)nudIpPort.Value;
-
-            tbxIp_ConnectionStringValuesChanged(null, null);
-
-            if (chxIpUdp.Checked)
-            {
-                // Basic user feedback.
-                toolStripStatusLabel1.Text = "Testing UDP port...";
-                statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
-
-                // Check the result of the connetion test.
-                bool portTestSuccessful = UdpCommunication.TestPort(port);
-                if (portTestSuccessful)
-                {
-                    toolStripStatusLabel1.Text = "UDP port test: successful";
-                    lblIpConnection.Text = "Test: successful";
-                    toolTip1.SetToolTip(lblIpConnection, "");
-                    btnIpConnect.Enabled = true;
-                }
-                else
-                {
-                    string errorMessage;
-                    string errorTip;
-
-                    errorMessage = "The UDP port \"" + port + "\" is already in use";
-                    errorTip = "." + Environment.NewLine + Environment.NewLine +
-                        "Please select another port or try to close the program that is using the port.";
-
-                    MessageBox.Show(errorMessage + errorTip, "IP Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatusLabel1.Text = "UDP port test: failed. " + errorMessage;
-                    lblIpConnection.Text = "Test: failed";
-                    lblIpConnection.Image = _infoTip;
-                    toolTip1.SetToolTip(lblIpConnection, errorMessage + errorTip);
-                }
-            }
-            if (chxIpTcp.Checked)
-            {
-                // Basic user feedback.
-                toolStripStatusLabel1.Text = "Testing TCP port...";
-                statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
-
-                throw new NotImplementedException("TCP is not implemented yet.");
-            }
         }
 
         private void btnIpConnect_Click(object sender, EventArgs e)
         {
             nudIpPort.Enabled = !nudIpPort.Enabled;
-            tbxIpExternalAddress.Enabled = !tbxIpExternalAddress.Enabled;
-            nudIpExternalPort.Enabled = !nudIpExternalPort.Enabled;
             btnIpTest.Enabled = !btnIpTest.Enabled;
             chxIpUdp.Enabled = !chxIpUdp.Enabled;
             //chxIpTcp.Enabled = !chxIpTcp.Enabled; // Not implemented yet.
@@ -254,12 +187,69 @@ namespace ChatTwo_Server
                 _server.Start((int)nudIpPort.Value);
                 btnIpConnect.Text = "Stop IP Connection";
             }
-#if DEBUG
-            if (_server.Active && DatabaseCommunication.Active)
-                button4.Enabled = true;
-            else
-                button4.Enabled = false;
-#endif
+        }
+
+        private void tbxIp_ExternalIpValuesChanged(object sender, EventArgs e)
+        {
+            lblIpConnection.Text = "Test: -";
+            lblIpConnection.Image = null;
+        }
+
+        private void btnIpTest_Click(object sender, EventArgs e)
+        {
+            tbxIp_ExternalIpValuesChanged(null, null);
+
+            if (chxIpUdp.Checked)
+            {
+                // Basic user feedback.
+                toolStripStatusLabel1.Text = "Testing UDP port-forward...";
+                statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
+                
+                string errorMessage;
+                string errorTip;
+                System.Net.IPAddress address;
+                if (System.Net.IPAddress.TryParse(tbxIpExternalAddress.Text, out address))
+                {
+                    // Check the result of the port-forward test.
+                    bool portforwardTestSuccessful = UdpCommunication.TestPortforward(new System.Net.IPEndPoint(address, (int)nudIpExternalPort.Value));
+                    if (portforwardTestSuccessful)
+                    {
+                        toolStripStatusLabel1.Text = "UDP port-forward test: successful";
+                        lblIpConnection.Text = "Test: successful";
+                        toolTip1.SetToolTip(lblIpConnection, "");
+                        btnIpConnect.Enabled = true;
+                        return;
+                    }
+                    else
+                    {
+                        errorMessage = "The UDP port-forward test failed";
+                        errorTip = "." + Environment.NewLine + Environment.NewLine +
+                            "Please ensure your router is correctly configured.";
+                        lblIpConnection.Text = "Test: failed";
+                    }
+                }
+                else
+                {
+                    errorMessage = "The entered external IP address is invalid";
+                    errorTip = "." + Environment.NewLine + Environment.NewLine +
+                        "Please enter a valid IP address." + Environment.NewLine +
+                        "If you don't know your external IP address, you can get it by googling \"what is my IP?\".";
+                    lblIpConnection.Text = "Test: invalid IP address";
+                }
+
+                    MessageBox.Show(errorMessage + errorTip, "Port-Forward Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                toolStripStatusLabel1.Text = "UDP port-forward test: failed. " + errorMessage;
+                lblIpConnection.Image = _infoTip;
+                toolTip1.SetToolTip(lblIpConnection, errorMessage + errorTip);
+            }
+            if (chxIpTcp.Checked)
+            {
+                // Basic user feedback.
+                toolStripStatusLabel1.Text = "Testing TCP port-forward...";
+                statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
+
+                throw new NotImplementedException("TCP is not implemented yet.");
+            }
         }
         #endregion
 
@@ -411,20 +401,6 @@ namespace ChatTwo_Server
                 DatabaseCommunication.Disconnect();
             }
         }
-
-#if DEBUG
-        private void TestWrite(object sender, MessageTestEventArgs e)
-        {
-            WriteLog("[" + e.Ip.ToString() + "]" + Environment.NewLine + e.Time + Environment.NewLine + e.Text);
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-            ChatTwo_Client_Protocol.MessageTransmission += _server.SendMessage;
-            ChatTwo_Client_Protocol.MessageTransmissionHandler(new Message() { Type = ChatTwo_Protocol.MessageType.Login, To = 0, Text = "This is a test." });
-            ChatTwo_Client_Protocol.MessageTransmission -= _server.SendMessage;
-        }
-#endif
     }
 
     static class Global

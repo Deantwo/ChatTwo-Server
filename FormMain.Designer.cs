@@ -46,15 +46,20 @@
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tabLog = new System.Windows.Forms.TabPage();
-            this.button4 = new System.Windows.Forms.Button();
             this.rtbxLog = new System.Windows.Forms.RichTextBox();
             this.tabSetup = new System.Windows.Forms.TabPage();
             this.groupBoxIP = new System.Windows.Forms.GroupBox();
+            this.chxIpTcp = new System.Windows.Forms.CheckBox();
+            this.chxIpUdp = new System.Windows.Forms.CheckBox();
             this.nudIpPort = new System.Windows.Forms.NumericUpDown();
             this.btnIpConnect = new System.Windows.Forms.Button();
             this.lblIpPort = new System.Windows.Forms.Label();
+            this.nudIpExternalPort = new System.Windows.Forms.NumericUpDown();
             this.btnIpTest = new System.Windows.Forms.Button();
             this.lblIpConnection = new System.Windows.Forms.Label();
+            this.lblIpExternalAddress = new System.Windows.Forms.Label();
+            this.tbxIpExternalAddress = new System.Windows.Forms.TextBox();
+            this.lblIpExternalPort = new System.Windows.Forms.Label();
             this.groupBoxSql = new System.Windows.Forms.GroupBox();
             this.btnSqlUpdate = new System.Windows.Forms.Button();
             this.btnSqlConnect = new System.Windows.Forms.Button();
@@ -77,12 +82,6 @@
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.lblIpExternalPort = new System.Windows.Forms.Label();
-            this.tbxIpExternalAddress = new System.Windows.Forms.TextBox();
-            this.lblIpExternalAddress = new System.Windows.Forms.Label();
-            this.nudIpExternalPort = new System.Windows.Forms.NumericUpDown();
-            this.chxIpUdp = new System.Windows.Forms.CheckBox();
-            this.chxIpTcp = new System.Windows.Forms.CheckBox();
             this.contextMenuStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -91,11 +90,11 @@
             this.tabSetup.SuspendLayout();
             this.groupBoxIP.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudIpPort)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIpExternalPort)).BeginInit();
             this.groupBoxSql.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSqlPort)).BeginInit();
             this.tabSqlTest.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudIpExternalPort)).BeginInit();
             this.SuspendLayout();
             // 
             // notifyIcon1
@@ -211,9 +210,9 @@
             // 
             // toolStripStatusLabel1
             // 
-            this.toolStripStatusLabel1.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top)
-                        | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right)
-                        | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
+            this.toolStripStatusLabel1.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top) 
+            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
+            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.toolStripStatusLabel1.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenOuter;
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.Size = new System.Drawing.Size(451, 19);
@@ -235,7 +234,6 @@
             // 
             // tabLog
             // 
-            this.tabLog.Controls.Add(this.button4);
             this.tabLog.Controls.Add(this.rtbxLog);
             this.tabLog.Location = new System.Drawing.Point(4, 22);
             this.tabLog.Name = "tabLog";
@@ -244,16 +242,6 @@
             this.tabLog.TabIndex = 0;
             this.tabLog.Text = "Log";
             this.tabLog.UseVisualStyleBackColor = true;
-            // 
-            // button4
-            // 
-            this.button4.Enabled = false;
-            this.button4.Location = new System.Drawing.Point(133, 140);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(75, 23);
-            this.button4.TabIndex = 2;
-            this.button4.Text = "button4";
-            this.button4.UseVisualStyleBackColor = true;
             // 
             // rtbxLog
             // 
@@ -299,6 +287,33 @@
             this.groupBoxIP.TabStop = false;
             this.groupBoxIP.Text = "IP Settings";
             // 
+            // chxIpTcp
+            // 
+            this.chxIpTcp.AutoSize = true;
+            this.chxIpTcp.Enabled = false;
+            this.chxIpTcp.Location = new System.Drawing.Point(74, 33);
+            this.chxIpTcp.Name = "chxIpTcp";
+            this.chxIpTcp.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.chxIpTcp.Size = new System.Drawing.Size(47, 17);
+            this.chxIpTcp.TabIndex = 11;
+            this.chxIpTcp.Text = "TCP";
+            this.chxIpTcp.UseVisualStyleBackColor = true;
+            this.chxIpTcp.CheckedChanged += new System.EventHandler(this.chxIp_CheckedChanged);
+            // 
+            // chxIpUdp
+            // 
+            this.chxIpUdp.AutoSize = true;
+            this.chxIpUdp.Checked = true;
+            this.chxIpUdp.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chxIpUdp.Location = new System.Drawing.Point(9, 32);
+            this.chxIpUdp.Name = "chxIpUdp";
+            this.chxIpUdp.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
+            this.chxIpUdp.Size = new System.Drawing.Size(49, 17);
+            this.chxIpUdp.TabIndex = 11;
+            this.chxIpUdp.Text = "UDP";
+            this.chxIpUdp.UseVisualStyleBackColor = true;
+            this.chxIpUdp.CheckedChanged += new System.EventHandler(this.chxIp_CheckedChanged);
+            // 
             // nudIpPort
             // 
             this.nudIpPort.Location = new System.Drawing.Point(155, 33);
@@ -321,12 +336,10 @@
             0,
             0,
             0});
-            this.nudIpPort.ValueChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
             // 
             // btnIpConnect
             // 
-            this.btnIpConnect.Enabled = false;
-            this.btnIpConnect.Location = new System.Drawing.Point(6, 126);
+            this.btnIpConnect.Location = new System.Drawing.Point(6, 59);
             this.btnIpConnect.Name = "btnIpConnect";
             this.btnIpConnect.Size = new System.Drawing.Size(206, 23);
             this.btnIpConnect.TabIndex = 6;
@@ -343,25 +356,77 @@
             this.lblIpPort.TabIndex = 3;
             this.lblIpPort.Text = "Int. Port:";
             // 
+            // nudIpExternalPort
+            // 
+            this.nudIpExternalPort.Location = new System.Drawing.Point(155, 129);
+            this.nudIpExternalPort.Maximum = new decimal(new int[] {
+            49151,
+            0,
+            0,
+            0});
+            this.nudIpExternalPort.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.nudIpExternalPort.Name = "nudIpExternalPort";
+            this.nudIpExternalPort.Size = new System.Drawing.Size(57, 20);
+            this.nudIpExternalPort.TabIndex = 10;
+            this.nudIpExternalPort.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.nudIpExternalPort.Value = new decimal(new int[] {
+            9020,
+            0,
+            0,
+            0});
+            this.nudIpExternalPort.ValueChanged += new System.EventHandler(this.tbxIp_ExternalIpValuesChanged);
+            // 
             // btnIpTest
             // 
-            this.btnIpTest.Location = new System.Drawing.Point(6, 97);
+            this.btnIpTest.Enabled = false;
+            this.btnIpTest.Location = new System.Drawing.Point(6, 155);
             this.btnIpTest.Name = "btnIpTest";
             this.btnIpTest.Size = new System.Drawing.Size(100, 23);
             this.btnIpTest.TabIndex = 3;
-            this.btnIpTest.Text = "Test Connection";
+            this.btnIpTest.Text = "Test Port-Forward";
             this.btnIpTest.UseVisualStyleBackColor = true;
             this.btnIpTest.Click += new System.EventHandler(this.btnIpTest_Click);
             // 
             // lblIpConnection
             // 
             this.lblIpConnection.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.lblIpConnection.Location = new System.Drawing.Point(112, 94);
+            this.lblIpConnection.Location = new System.Drawing.Point(112, 152);
             this.lblIpConnection.Name = "lblIpConnection";
             this.lblIpConnection.Size = new System.Drawing.Size(100, 29);
             this.lblIpConnection.TabIndex = 4;
             this.lblIpConnection.Text = "Test: -";
             this.lblIpConnection.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // lblIpExternalAddress
+            // 
+            this.lblIpExternalAddress.AutoSize = true;
+            this.lblIpExternalAddress.Location = new System.Drawing.Point(6, 113);
+            this.lblIpExternalAddress.Name = "lblIpExternalAddress";
+            this.lblIpExternalAddress.Size = new System.Drawing.Size(79, 13);
+            this.lblIpExternalAddress.TabIndex = 2;
+            this.lblIpExternalAddress.Text = "Ext. IP Address";
+            // 
+            // tbxIpExternalAddress
+            // 
+            this.tbxIpExternalAddress.Location = new System.Drawing.Point(6, 129);
+            this.tbxIpExternalAddress.Name = "tbxIpExternalAddress";
+            this.tbxIpExternalAddress.Size = new System.Drawing.Size(143, 20);
+            this.tbxIpExternalAddress.TabIndex = 1;
+            this.tbxIpExternalAddress.Text = "87.52.32.46";
+            this.tbxIpExternalAddress.TextChanged += new System.EventHandler(this.tbxIp_ExternalIpValuesChanged);
+            // 
+            // lblIpExternalPort
+            // 
+            this.lblIpExternalPort.AutoSize = true;
+            this.lblIpExternalPort.Location = new System.Drawing.Point(152, 113);
+            this.lblIpExternalPort.Name = "lblIpExternalPort";
+            this.lblIpExternalPort.Size = new System.Drawing.Size(50, 13);
+            this.lblIpExternalPort.TabIndex = 3;
+            this.lblIpExternalPort.Text = "Ext. Port:";
             // 
             // groupBoxSql
             // 
@@ -589,84 +654,6 @@
             this.textBox2.Size = new System.Drawing.Size(100, 20);
             this.textBox2.TabIndex = 12;
             // 
-            // lblIpExternalPort
-            // 
-            this.lblIpExternalPort.AutoSize = true;
-            this.lblIpExternalPort.Location = new System.Drawing.Point(152, 55);
-            this.lblIpExternalPort.Name = "lblIpExternalPort";
-            this.lblIpExternalPort.Size = new System.Drawing.Size(50, 13);
-            this.lblIpExternalPort.TabIndex = 3;
-            this.lblIpExternalPort.Text = "Ext. Port:";
-            // 
-            // tbxIpExternalAddress
-            // 
-            this.tbxIpExternalAddress.Location = new System.Drawing.Point(6, 71);
-            this.tbxIpExternalAddress.Name = "tbxIpExternalAddress";
-            this.tbxIpExternalAddress.Size = new System.Drawing.Size(143, 20);
-            this.tbxIpExternalAddress.TabIndex = 1;
-            this.tbxIpExternalAddress.Text = "87.52.32.46";
-            this.tbxIpExternalAddress.TextChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
-            // 
-            // lblIpExternalAddress
-            // 
-            this.lblIpExternalAddress.AutoSize = true;
-            this.lblIpExternalAddress.Location = new System.Drawing.Point(6, 55);
-            this.lblIpExternalAddress.Name = "lblIpExternalAddress";
-            this.lblIpExternalAddress.Size = new System.Drawing.Size(66, 13);
-            this.lblIpExternalAddress.TabIndex = 2;
-            this.lblIpExternalAddress.Text = "Ext. Address";
-            // 
-            // nudIpExternalPort
-            // 
-            this.nudIpExternalPort.Location = new System.Drawing.Point(155, 71);
-            this.nudIpExternalPort.Maximum = new decimal(new int[] {
-            49151,
-            0,
-            0,
-            0});
-            this.nudIpExternalPort.Minimum = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
-            this.nudIpExternalPort.Name = "nudIpExternalPort";
-            this.nudIpExternalPort.Size = new System.Drawing.Size(57, 20);
-            this.nudIpExternalPort.TabIndex = 10;
-            this.nudIpExternalPort.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-            this.nudIpExternalPort.Value = new decimal(new int[] {
-            9020,
-            0,
-            0,
-            0});
-            this.nudIpExternalPort.ValueChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
-            // 
-            // chxIpUdp
-            // 
-            this.chxIpUdp.AutoSize = true;
-            this.chxIpUdp.Checked = true;
-            this.chxIpUdp.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chxIpUdp.Location = new System.Drawing.Point(9, 32);
-            this.chxIpUdp.Name = "chxIpUdp";
-            this.chxIpUdp.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.chxIpUdp.Size = new System.Drawing.Size(49, 17);
-            this.chxIpUdp.TabIndex = 11;
-            this.chxIpUdp.Text = "UDP";
-            this.chxIpUdp.UseVisualStyleBackColor = true;
-            this.chxIpUdp.CheckedChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
-            // 
-            // chxIpTcp
-            // 
-            this.chxIpTcp.AutoSize = true;
-            this.chxIpTcp.Enabled = false;
-            this.chxIpTcp.Location = new System.Drawing.Point(74, 33);
-            this.chxIpTcp.Name = "chxIpTcp";
-            this.chxIpTcp.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.chxIpTcp.Size = new System.Drawing.Size(47, 17);
-            this.chxIpTcp.TabIndex = 11;
-            this.chxIpTcp.Text = "TCP";
-            this.chxIpTcp.UseVisualStyleBackColor = true;
-            this.chxIpTcp.CheckedChanged += new System.EventHandler(this.tbxIp_ConnectionStringValuesChanged);
-            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -692,13 +679,13 @@
             this.groupBoxIP.ResumeLayout(false);
             this.groupBoxIP.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudIpPort)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.nudIpExternalPort)).EndInit();
             this.groupBoxSql.ResumeLayout(false);
             this.groupBoxSql.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nudSqlPort)).EndInit();
             this.tabSqlTest.ResumeLayout(false);
             this.tabSqlTest.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.nudIpExternalPort)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -740,7 +727,6 @@
         private System.Windows.Forms.Button btnSqlUpdate;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.ToolStripMenuItem showPasswordsToolStripMenuItem;
-        private System.Windows.Forms.Button button4;
         private System.Windows.Forms.GroupBox groupBoxIP;
         private System.Windows.Forms.NumericUpDown nudIpPort;
         private System.Windows.Forms.Button btnIpConnect;
