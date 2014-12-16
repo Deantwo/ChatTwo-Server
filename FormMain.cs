@@ -168,7 +168,7 @@ namespace ChatTwo_Server
         #region IP Setup
         private void chxIp_CheckedChanged(object sender, EventArgs e)
         {
-            btnIpTest.Enabled = chxIpUdp.Checked || chxIpTcp.Checked;
+            btnIpConnect.Enabled = chxIpUdp.Checked || chxIpTcp.Checked;
         }
 
         private void btnIpConnect_Click(object sender, EventArgs e)
