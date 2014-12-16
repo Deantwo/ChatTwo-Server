@@ -69,8 +69,10 @@ namespace ChatTwo_Server
 
             Message messageObj = new Message();
             messageObj.Ip = args.Sender;
+            int milliseconds = ByteHelper.ToInt32(args.Data, 0);
+            messageObj.Timez = String.Format("{0}:{1}:{2}", (milliseconds / (60 * 60 * 1000)) % 24, (milliseconds / (60 * 1000)) % 60, (milliseconds / (1000)) % 60);
             messageObj.Type = (MessageType)args.Data[4];
-            messageObj.Data = args.Data;
+            messageObj.Data = ByteHelper.SubArray(args.Data, 5);
 
             return messageObj;
         }
@@ -113,6 +115,7 @@ namespace ChatTwo_Server
         public int From { get; set; }
         public IPEndPoint Ip { get; set; }
         public ChatTwo_Protocol.MessageType Type { get; set; }
+        public string Timez { get; set; }
         public byte[] Data { get; set; }
         public string Text { get; set; }
     }

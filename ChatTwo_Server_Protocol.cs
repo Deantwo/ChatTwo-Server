@@ -24,7 +24,7 @@ namespace ChatTwo_Server
                 ChatTwo_Protocol.MessageType type = (ChatTwo_Protocol.MessageType)args.Data[ChatTwo_Protocol.SignatureByteLength + ChatTwo_Protocol.HashByteLength + 4];
                 if (type == ChatTwo_Protocol.MessageType.CreateUser)
                 {
-                    sharedSecret = "ChatTwo"; // Default hardcoded sharedSecret.
+                    sharedSecret = "5ny1mzFo4S6nh7hDcqsHVg+DBNU="; // Default hardcoded sharedSecret.
                 }
                 if (type == ChatTwo_Protocol.MessageType.Login) // 26 (SignatureByteLength + MacByteLength + TimezByteLength) is the position of the Type byte.
                 {
@@ -44,48 +44,48 @@ namespace ChatTwo_Server
                     IPEndPoint messageSender = message.Ip;
                     byte[] messageBytes = message.Data;
 
-                    byte[] messageData = new byte[0];
-                    string messageText = "";
-
-                    string passwordHash; // Each case isn't its own scope?
-                    string username; // Each case isn't its own scope?
                     switch (message.Type)
                     {
                         case ChatTwo_Protocol.MessageType.CreateUser:
-                            passwordHash = Convert.ToBase64String(message.Data, 0, ChatTwo_Protocol.HashByteLength);
-                            username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ChatTwo_Protocol.HashByteLength));
-                            bool worked = DatabaseCommunication.CreateUser(username, passwordHash);
-                            if (worked)
                             {
-                                // Have to send back a CreateUserReply here.
+                                string passwordHash = Convert.ToBase64String(message.Data, 0, ChatTwo_Protocol.HashByteLength);
+                                string username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ChatTwo_Protocol.HashByteLength));
+                                bool worked = DatabaseCommunication.CreateUser(username, passwordHash);
+                                if (worked)
+                                {
+                                    // Have to send back a CreateUserReply here.
+                                }
+                                else
+                                {
+                                    // Have to send back a CreateUserReply with a "username already exist" error here.
+                                }
+                                break;
                             }
-                            else
-                            {
-                                // Have to send back a CreateUserReply with a "username already exist" error here.
-                            }
-                            break;
                         case ChatTwo_Protocol.MessageType.Login:
-                            passwordHash = Convert.ToBase64String(message.Data, 0, ChatTwo_Protocol.HashByteLength);
-                            username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ChatTwo_Protocol.HashByteLength));
-                            UserObj user = DatabaseCommunication.LoginUser(username, passwordHash);
-                            if (user == null)
-                                throw new NotImplementedException("Username or password was not correct for \"" + username + "\".");
+                            {
+                                string passwordHash = Convert.ToBase64String(message.Data, 0, ChatTwo_Protocol.HashByteLength);
+                                string username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ChatTwo_Protocol.HashByteLength));
+                                UserObj user = DatabaseCommunication.LoginUser(username, passwordHash);
+                                if (user == null)
+                                    throw new NotImplementedException("Username or password was not correct for \"" + username + "\".");
                                 // Have to send back a LoginReply message here with a "wrong username/password" error.
-                            user.Secret = sharedSecret;
-                            user.Socket = message.Ip;
-                            DatabaseCommunication.UpdateUser(user.ID, user.Socket);
-                            _users.Add(user);
-                            break;
-//#if DEBUG
-//                            MessageTestEventArgs newArgs = new MessageTestEventArgs();
-//                            newArgs.From = message.From;
-//                            newArgs.Ip = messageSender;
-//                            int milliseconds = ByteHelper.ToInt32(messageBytes, 0);
-//                            newArgs.Time = String.Format("{0}:{1}:{2}", (milliseconds / (60 * 60 * 1000)) % 24, (milliseconds / (60 * 1000)) % 60, (milliseconds / (1000)) % 60);
-//                            newArgs.Text = messageText;
-//                            OnMessageTest(newArgs);
-//                            break;
-//#endif
+                                user.Secret = sharedSecret;
+                                user.Socket = message.Ip;
+                                DatabaseCommunication.UpdateUser(user.ID, user.Socket);
+                                _users.Add(user);
+                                break;
+                            }
+                        case ChatTwo_Protocol.MessageType.Status:
+                            {
+                                UserObj user = _users[0]; // HOW!!!!!!!!!!!!!!!!!!!!??!??!?!?!?!??!?!?!?!??!?!?!?!?!?!!!!!?11?
+                                if (user.Socket != message.Ip)
+                                {
+                                    // Message all contacts of the user with the new IP change!!!
+                                    user.Socket = message.Ip;
+                                }
+                                DatabaseCommunication.UpdateUser(user.ID, user.Socket);
+                                break;
+                            }
                     }
                 }
                 else
@@ -102,7 +102,7 @@ namespace ChatTwo_Server
             string sharedSecret;
             if (message.Type == ChatTwo_Protocol.MessageType.CreateUserReply)
             {
-                sharedSecret = "ChatTwo"; // Default hardcoded sharedSecret.
+                sharedSecret = "5ny1mzFo4S6nh7hDcqsHVg+DBNU="; // Default hardcoded sharedSecret.
             }
             else if (message.Type == ChatTwo_Protocol.MessageType.LoginReply)
             {
@@ -116,7 +116,7 @@ namespace ChatTwo_Server
             messageBytes = ChatTwo_Protocol.AddSignatureAndMac(messageBytes, sharedSecret);
 
 
-            // Fire an MessageReceived event.
+            // Fire an OnMessageReceived event.
             MessageTransmissionEventArgs args = new MessageTransmissionEventArgs();
             args.Ip = _users.Find(x => x.ID == message.To).Socket;
             args.MessageBytes = messageBytes;
@@ -139,27 +139,5 @@ namespace ChatTwo_Server
             }
         }
         public static event EventHandler<MessageTransmissionEventArgs> MessageTransmission;
-
-#if DEBUG
-        private static void OnMessageTest(MessageTestEventArgs e)
-        {
-            EventHandler<MessageTestEventArgs> handler = MessageTest;
-            if (handler != null)
-            {
-                handler(null, e);
-            }
-        }
-        public static event EventHandler<MessageTestEventArgs> MessageTest;
-#endif
     }
-    
-#if DEBUG
-    public class MessageTestEventArgs : EventArgs
-    {
-        public int From { get; set; }
-        public IPEndPoint Ip { get; set; }
-        public string Time { get; set; }
-        public string Text { get; set; }
-    }
-#endif
 }
