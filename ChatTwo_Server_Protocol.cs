@@ -18,25 +18,31 @@ namespace ChatTwo_Server
 
         public static void MessageReceivedHandler(object sender, MessageReceivedEventArgs args)
         {
-            if (args.Data[0] == 0x92)
+            if (!DatabaseCommunication.Active)
+                throw new NotImplementedException("Database connection was not active and a reply for this have not been implemented yet.");
+                // Need to add a simple debug message here, but this works as a great breakpoint until then.
+                // Also need to make some kind of error message I can send back to the client.
+
+            if (args.Data[0] == 0x92 )
             {
                 string sharedSecret;
                 // Position of the Type byte is 30 (SignatureByteLength + MacByteLength + TimezByteLength + UserIdByteLength).
                 ChatTwo_Protocol.MessageType type = (ChatTwo_Protocol.MessageType)args.Data[ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4 + 4];
                 if (type == ChatTwo_Protocol.MessageType.CreateUser)
                 {
-                    sharedSecret = "5ny1mzFo4S6nh7hDcqsHVg+DBNU="; // Default hardcoded sharedSecret.
+                    sharedSecret = ChatTwo_Protocol.DefaultSharedSecret;
                 }
-                if (type == ChatTwo_Protocol.MessageType.Login)
+                else if (type == ChatTwo_Protocol.MessageType.Login)
                 {
 #if DEBUG
-                    byte[] test = ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength);
+                    byte[] test = ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4);
 #endif
-                    sharedSecret = ByteHelper.GetHashString(ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength));
+                    // Don't take the Timez as part of the sharedSecret. This is mostly because of a problem I have in the client where I make the sharedSecrt before I add the Timez.
+                    sharedSecret = ByteHelper.GetHashString(ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4));
                 }
                 else
                 {
-                    // Position of the UserID bytes is 26 (SignatureByteLength + MacByteLength + TimezByteLength + UserIdByteLength) with a length of 4.
+                    // Position of the UserID bytes is 26 (SignatureByteLength + MacByteLength + TimezByteLength) with a length of 4.
                     int userId = ByteHelper.ToInt32(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4);
                     sharedSecret = _users.Find(x => x.ID == userId).Secret;
                 }
@@ -45,8 +51,6 @@ namespace ChatTwo_Server
                 if (ChatTwo_Protocol.ValidateMac(args.Data, sharedSecret))
                 {
                     Message message = ChatTwo_Protocol.MessageReceivedHandler(args);
-                    IPEndPoint messageSender = message.Ip;
-                    byte[] messageBytes = message.Data;
 
                     switch (message.Type)
                     {
@@ -78,16 +82,22 @@ namespace ChatTwo_Server
                                     MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.LoginReply, new byte[] { 0x01 });
                                     return;
                                 }
+                                if (_users.Any(x => x.ID == user.ID))
+                                {
+                                    // Have to send back a LoginReply message here with a "User is already online" error.
+                                    MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.LoginReply, new byte[] { 0x02 });
+                                    return;
+                                }
                                 user.Secret = sharedSecret;
                                 user.Socket = message.Ip;
                                 _users.Add(user);
-                                MessageToUser(user.ID, ChatTwo_Protocol.MessageType.LoginReply, ByteHelper.ConcatinateArray(new byte[] { 0x00 }, BitConverter.GetBytes(user.ID)));
+                                MessageToUser(user.ID, ChatTwo_Protocol.MessageType.LoginReply, ByteHelper.ConcatinateArray(new byte[] { 0x00 }, BitConverter.GetBytes(user.ID)), user.Name);
                                 DatabaseCommunication.UpdateUser(user.ID, user.Socket);
                                 break;
                             }
                         case ChatTwo_Protocol.MessageType.Status:
                             {
-                                UserObj user = _users[0]; // HOW!!!!!!!!!!!!!!!!!!!!??!??!?!?!?!??!?!?!?!??!?!?!?!?!?!!!!!?11?
+                                UserObj user = _users.Find(x => x.ID == message.From);
                                 if (user.Socket != message.Ip)
                                 {
                                     // Message all contacts of the user with the new IP change!!!
@@ -140,7 +150,13 @@ namespace ChatTwo_Server
             string sharedSecret;
             if (message.Type == ChatTwo_Protocol.MessageType.CreateUserReply)
             {
-                sharedSecret = "5ny1mzFo4S6nh7hDcqsHVg+DBNU="; // Default hardcoded sharedSecret.
+                sharedSecret = ChatTwo_Protocol.DefaultSharedSecret;
+            }
+            else if (message.Type == ChatTwo_Protocol.MessageType.LoginReply && message.To == 0)
+            {
+                // !? This will only happen if the login attempt failed.
+                // But because the login attempt failed, I don't save a UserObj object in the _users list, which in turn mean I don't have a sharedSecret saved!
+                sharedSecret = ChatTwo_Protocol.DefaultSharedSecret;
             }
             else
             {
@@ -151,18 +167,23 @@ namespace ChatTwo_Server
 
             messageBytes = ChatTwo_Protocol.AddSignatureAndMac(messageBytes, sharedSecret);
 
-            // Fire an OnMessageReceived event.
+            // Fire an OnMessageTransmission event.
             MessageTransmissionEventArgs args = new MessageTransmissionEventArgs();
-            args.Ip = _users.Find(x => x.ID == message.To).Socket;
+            args.Ip = message.Ip;
             args.MessageBytes = messageBytes;
             OnMessageTransmission(args);
         }
 
         public static void TellUserAboutContactstatusChange(object sender, OnUserStatusChangeEventArgs args)
         {
-            Message message = new Message() { To = args.TellId, Type = ChatTwo_Protocol.MessageType.ContactStatus, Data = new byte[] { (byte)args.IdIs, Convert.ToByte(args.Online) } };
-
-            MessageTransmissionHandler(message);
+            byte[] dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(args.IdIs), new byte[] { Convert.ToByte(args.Online) });
+            if (args.Online)
+            {
+                // 0x01 for UDP only.
+                byte[] socketBytes = ByteHelper.ConcatinateArray(new byte[] {0x01}, BitConverter.GetBytes(args.Socket.Port), args.Socket.Address.GetAddressBytes());
+                dataBytes = ByteHelper.ConcatinateArray(dataBytes, socketBytes);
+            }
+            MessageToUser(args.TellId, ChatTwo_Protocol.MessageType.ContactStatus, dataBytes);
         }
 
         private static void OnMessageTransmission(MessageTransmissionEventArgs e)

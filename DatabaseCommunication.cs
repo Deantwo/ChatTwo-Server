@@ -27,7 +27,7 @@ namespace ChatTwo_Server
         // StatusIntervalUpdate thread.
         private static Thread _threadStatusIntervalUpdate;
 
-        private  static CultureInfo _ci = CultureInfo.CreateSpecificCulture("en-US");
+        //private  static CultureInfo _ci = CultureInfo.CreateSpecificCulture("en-US");
 
         // SqlConnection object is saved here for continued use.
         private static MySqlConnection _conn;
@@ -445,6 +445,12 @@ namespace ChatTwo_Server
                     // Execute SQL command.
                     cmdResult = cmd.ExecuteNonQuery();
                 }
+                catch (MySqlException ex)
+                {
+                    if (ex.Number == 1062)
+                        return false;
+                    throw ex;
+                }
                 finally
                 {
                     Close();
@@ -471,7 +477,6 @@ namespace ChatTwo_Server
                         cmdResult = new UserObj();
                         cmdResult.ID = (int)reader["ID"];
                         cmdResult.Name = (string)reader["Name"];
-                        cmdResult.Password = (string)reader["Password"];
                         cmdResult.Online = (bool)reader["Online"];
                         cmdResult.StringSocket(reader["Socket"].ToString());
                         cmdResult.LastOnline = (DateTime)reader["LastOnline"];//, _ci);
@@ -489,7 +494,7 @@ namespace ChatTwo_Server
         static public UserObj LoginUser(string name, string password)
         {
             UserObj cmdResult = null;
-            using (MySqlCommand cmd = new MySqlCommand("SELECT `ID` FROM `Users` WHERE `Name` = @name AND `Password` = @password;", _conn))
+            using (MySqlCommand cmd = new MySqlCommand("SELECT `ID`, `Name` FROM `Users` WHERE `Name` = @name AND `Password` = @password;", _conn))
             {
                 // Add parameterized parameters to prevent SQL injection.
                 cmd.Parameters.AddWithValue("@name", name);
@@ -504,6 +509,7 @@ namespace ChatTwo_Server
                     {
                         cmdResult = new UserObj();
                         cmdResult.ID = (int)reader["ID"];
+                        cmdResult.Name = reader["Name"].ToString();
                     }
                 }
                 finally
@@ -585,6 +591,7 @@ namespace ChatTwo_Server
             }
         }
 
+        // Should make a stored procedure that return only mutual contacts that are online. Would make this faster!
         private static void UserStatusChanged(int userId, bool comesOnline) // Threaded method.
         {
             List<int> contactIds = new List<int>();
@@ -664,5 +671,6 @@ namespace ChatTwo_Server
         public int TellId { get; set; }
         public int IdIs { get; set; }
         public bool Online { get; set; }
+        public IPEndPoint Socket { get; set; }
     }
 }

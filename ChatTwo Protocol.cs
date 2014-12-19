@@ -15,6 +15,8 @@ namespace ChatTwo_Server
 
         public const int ServerReserrvedUserID = 0;
 
+        public const string DefaultSharedSecret = "5ny1mzFo4S6nh7hDcqsHVg+DBNU=";
+
         public enum MessageType
         {
             CreateUser, // When a new user is joining the server,, creating a username and password.
@@ -90,7 +92,7 @@ namespace ChatTwo_Server
             if (message.Data != null)
                 dataBytes = message.Data;
 
-            byte[] messageBytes = ByteHelper.ConcatinateArray(new byte[] { (byte)message.Type }, BitConverter.GetBytes(message.From));
+            byte[] messageBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(message.From), new byte[] { (byte)message.Type });
             messageBytes = ByteHelper.ConcatinateArray(messageBytes, dataBytes, textBytes);
 
             return messageBytes;

@@ -29,7 +29,8 @@ namespace ChatTwo_Server
             ChatTwo_Server_Protocol.MessageTransmission += _server.SendMessage;
             DatabaseCommunication.UserStatusChange += ChatTwo_Server_Protocol.TellUserAboutContactstatusChange;
 
-            notifyIcon1.BalloonTipTitle = this.Name;
+            notifyIcon1.BalloonTipTitle = this.Text;
+            notifyIcon1.Text = this.Text;
             notifyIcon1.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
             this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
 
@@ -351,13 +352,11 @@ namespace ChatTwo_Server
             {
                 if (FormWindowState.Minimized == this.WindowState)
                 {
-                    notifyIcon1.Visible = true;
                     TrayBalloonTip("Minimized to tray", ToolTipIcon.None);
                     this.ShowInTaskbar = false;
                 }
                 else if (FormWindowState.Normal == this.WindowState)
                 {
-                    notifyIcon1.Visible = false;
                     this.ShowInTaskbar = true;
                 }
             }
