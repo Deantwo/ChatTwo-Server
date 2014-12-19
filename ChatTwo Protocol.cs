@@ -11,7 +11,6 @@ namespace ChatTwo_Server
     {
         const byte _version = 0x00;
 
-        public const int HashByteLength = 20;
         public const int SignatureByteLength = 2;
 
         public enum MessageType
@@ -25,16 +24,17 @@ namespace ChatTwo_Server
             ContactRevoke, // Remove someone from your contacts.
             ContactStatus, // Tell client the online status and IP address of a contact.
             Message, // Message to another user.
-            RelayMessage // Request for the server to relay a message to another user. Used if peer-to-peer fail?
+            RelayMessage, // Request for the server to relay a message to another user. Used if peer-to-peer fail?
+            Logout // Terminate all communication.
         }
 
         public static bool ValidateMac(byte[] bytes, string sharedSecret)
         {
-            string mac = Convert.ToBase64String(bytes, 2, HashByteLength);
+            string mac = Convert.ToBase64String(bytes, 2, ByteHelper.HashByteLength);
 #if DEBUG
-            string test = CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + HashByteLength), sharedSecret);
+            string test = CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + ByteHelper.HashByteLength), sharedSecret);
 #endif
-            bool macValid = CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + HashByteLength), sharedSecret) == mac;
+            bool macValid = CreateMac(ByteHelper.SubArray(bytes, SignatureByteLength + ByteHelper.HashByteLength), sharedSecret) == mac;
             return macValid;
         }
 
@@ -54,7 +54,7 @@ namespace ChatTwo_Server
 
         public static byte[] RemoveSignatureAndMac(byte[] bytes)
         {
-            bytes = ByteHelper.SubArray(bytes, SignatureByteLength + HashByteLength); // Remove the signature, the version number and the MAC.
+            bytes = ByteHelper.SubArray(bytes, SignatureByteLength + ByteHelper.HashByteLength); // Remove the signature, the version number and the MAC.
             return bytes;
         }
 

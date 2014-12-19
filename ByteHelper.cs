@@ -103,6 +103,7 @@ namespace ChatTwo_Server
             return converted;
         }
 
+        public const int HashByteLength = 20;
         /// <summary>
         /// Returns the SHA1 hash of a byte array in a Base64String.
         /// </summary>

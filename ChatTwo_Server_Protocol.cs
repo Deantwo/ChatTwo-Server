@@ -21,7 +21,7 @@ namespace ChatTwo_Server
             if (args.Data[0] == 0x92)
             {
                 string sharedSecret;
-                ChatTwo_Protocol.MessageType type = (ChatTwo_Protocol.MessageType)args.Data[ChatTwo_Protocol.SignatureByteLength + ChatTwo_Protocol.HashByteLength + 4];
+                ChatTwo_Protocol.MessageType type = (ChatTwo_Protocol.MessageType)args.Data[ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4];
                 if (type == ChatTwo_Protocol.MessageType.CreateUser)
                 {
                     sharedSecret = "5ny1mzFo4S6nh7hDcqsHVg+DBNU="; // Default hardcoded sharedSecret.
@@ -29,9 +29,9 @@ namespace ChatTwo_Server
                 if (type == ChatTwo_Protocol.MessageType.Login) // 26 (SignatureByteLength + MacByteLength + TimezByteLength) is the position of the Type byte.
                 {
 #if DEBUG
-                    byte[] test = ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ChatTwo_Protocol.HashByteLength);
+                    byte[] test = ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength);
 #endif
-                    sharedSecret = ByteHelper.GetHashString(ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ChatTwo_Protocol.HashByteLength));
+                    sharedSecret = ByteHelper.GetHashString(ByteHelper.SubArray(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength));
                 }
                 else
                     sharedSecret = ""; //?!?!?!?!
@@ -48,8 +48,8 @@ namespace ChatTwo_Server
                     {
                         case ChatTwo_Protocol.MessageType.CreateUser:
                             {
-                                string passwordHash = Convert.ToBase64String(message.Data, 0, ChatTwo_Protocol.HashByteLength);
-                                string username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ChatTwo_Protocol.HashByteLength));
+                                string passwordHash = Convert.ToBase64String(message.Data, 0, ByteHelper.HashByteLength);
+                                string username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ByteHelper.HashByteLength));
                                 bool worked = DatabaseCommunication.CreateUser(username, passwordHash);
                                 if (worked)
                                 {
@@ -63,8 +63,8 @@ namespace ChatTwo_Server
                             }
                         case ChatTwo_Protocol.MessageType.Login:
                             {
-                                string passwordHash = Convert.ToBase64String(message.Data, 0, ChatTwo_Protocol.HashByteLength);
-                                string username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ChatTwo_Protocol.HashByteLength));
+                                string passwordHash = Convert.ToBase64String(message.Data, 0, ByteHelper.HashByteLength);
+                                string username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ByteHelper.HashByteLength));
                                 UserObj user = DatabaseCommunication.LoginUser(username, passwordHash);
                                 if (user == null)
                                     throw new NotImplementedException("Username or password was not correct for \"" + username + "\".");

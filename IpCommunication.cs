@@ -38,7 +38,6 @@ namespace ChatTwo_Server
     class UdpCommunication : IpCommunication
     {
         protected Thread _threadMessageListener;
-        protected Thread _threadKeepalive;
         protected Thread _threadMessageSending;
 
         protected UdpClient _client;
@@ -91,9 +90,6 @@ namespace ChatTwo_Server
             _threadMessageListener = new Thread(new ThreadStart(ReceiveMessage));
             _threadMessageListener.Name = "Listen Thread (ReceiveMessage method)";
             _threadMessageListener.Start();
-            _threadKeepalive = new Thread(new ThreadStart(Keepalive));
-            _threadKeepalive.Name = "Keepalive Thread (Keepalive method)";
-            _threadKeepalive.Start();
             _threadMessageSending = new Thread(new ThreadStart(MessageTransmissionControl));
             _threadMessageSending.Name = "Message Ecoding Thread (MessageTransmissionControl method)";
             _threadMessageSending.Start();
@@ -105,8 +101,6 @@ namespace ChatTwo_Server
             if (_online)
             {
                 _online = false;
-                //_threadKeepalive.Abort();
-                _threadKeepalive.Join();
                 //_threadMessageListener.Abort(); // This caused some problems.
                 _threadMessageListener.Join(); // Wait for ListenThread's next "am I online?" check.
                 _client.Close();
@@ -115,14 +109,14 @@ namespace ChatTwo_Server
 
         protected byte[] CreateAck(string hash)
         {
-            byte[] ackTag = new byte[] { 0xCE }; // 206
+            byte[] ackTag = new byte[] { 0xCE }; // 0xCE = 206
             byte[] ackBytes = ByteHelper.ConcatinateArray(ackTag, Convert.FromBase64String(hash), ackTag);
             return ackBytes;
         }
 
         protected string OpenAck(byte[] bytes)
         {
-            string ackHash = Convert.ToBase64String(bytes, 1, 20);
+            string ackHash = Convert.ToBase64String(bytes, 1, ByteHelper.HashByteLength);
             return ackHash;
         }
 
@@ -182,23 +176,6 @@ namespace ChatTwo_Server
             }
         }
 
-        protected void Keepalive() // Threaded looping method.
-        {
-            try
-            {
-                while (_online)
-                {
-                    Thread.Sleep(500);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("### " + _threadMessageListener.Name + " has crashed:");
-                System.Diagnostics.Debug.WriteLine("### " + ex.Message);
-                System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
-            }
-        }
-
         public void SendMessage(object sender, MessageTransmissionEventArgs args)
         {
             ControlledMessage ctrlMessage = new ControlledMessage();
@@ -208,7 +185,7 @@ namespace ChatTwo_Server
             _messageSendingControlList.Add(ctrlMessage);
         }
 
-        protected void MessageTransmissionControl() // Threaded method.
+        protected void MessageTransmissionControl() // Threaded looping method.
         {
             try
             {
