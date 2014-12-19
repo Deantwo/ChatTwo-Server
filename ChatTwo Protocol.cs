@@ -13,6 +13,8 @@ namespace ChatTwo_Server
 
         public const int SignatureByteLength = 2;
 
+        public const int ServerReserrvedUserID = 0;
+
         public enum MessageType
         {
             CreateUser, // When a new user is joining the server,, creating a username and password.
@@ -45,9 +47,9 @@ namespace ChatTwo_Server
             bytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(timez), bytes); // Add a milisecond timestamp to the meassage.
 
             byte[] macBytes = Convert.FromBase64String(CreateMac(bytes, sharedSecret));
-            
+
             byte[] singatureBytes = new byte[] { 0x92, _version }; // Signature byte and version byte.
-            
+
             bytes = ByteHelper.ConcatinateArray(singatureBytes, macBytes, bytes);
             return bytes;
         }
@@ -71,8 +73,9 @@ namespace ChatTwo_Server
             messageObj.Ip = args.Sender;
             int milliseconds = ByteHelper.ToInt32(args.Data, 0);
             messageObj.Timez = String.Format("{0}:{1}:{2}", (milliseconds / (60 * 60 * 1000)) % 24, (milliseconds / (60 * 1000)) % 60, (milliseconds / (1000)) % 60);
-            messageObj.Type = (MessageType)args.Data[4];
-            messageObj.Data = ByteHelper.SubArray(args.Data, 5);
+            messageObj.From = ByteHelper.ToInt32(args.Data, 4);
+            messageObj.Type = (MessageType)args.Data[8];
+            messageObj.Data = ByteHelper.SubArray(args.Data, 9);
 
             return messageObj;
         }
@@ -87,13 +90,8 @@ namespace ChatTwo_Server
             if (message.Data != null)
                 dataBytes = message.Data;
 
-            byte[] messageBytes = ByteHelper.ConcatinateArray(new byte[] { (byte)message.Type }, dataBytes, textBytes);
-#if DEBUG
-            string test1 = Encoding.Unicode.GetString(ByteHelper.SubArray(messageBytes, 1));
-#endif
-#if DEBUG
-            string test2 = Encoding.Unicode.GetString(ByteHelper.SubArray(messageBytes, 1));
-#endif
+            byte[] messageBytes = ByteHelper.ConcatinateArray(new byte[] { (byte)message.Type }, BitConverter.GetBytes(message.From));
+            messageBytes = ByteHelper.ConcatinateArray(messageBytes, dataBytes, textBytes);
 
             return messageBytes;
         }
