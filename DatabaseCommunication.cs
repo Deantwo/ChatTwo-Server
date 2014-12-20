@@ -215,23 +215,26 @@ namespace ChatTwo_Server
                     "CREATE DATABASE IF NOT EXISTS `ChatTwo`;" + Environment.NewLine +
                     "USE `ChatTwo`;" + Environment.NewLine +
                     "" + Environment.NewLine +
-                    "CREATE TABLE IF NOT EXISTS `ServerStatus` ( " + Environment.NewLine +
+                    "DROP TABLE IF EXISTS `ServerStatus`;" + Environment.NewLine +
+                    "CREATE TABLE `ServerStatus` (" + Environment.NewLine +
                     "    `Version` INT NOT NULL," + Environment.NewLine +
                     "    `CreationDate` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," + Environment.NewLine +
                     "    `LastUpdated` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" + Environment.NewLine +
                     "    );" + Environment.NewLine +
                     "INSERT INTO `ServerStatus` (`Version`) VALUES(0);" + Environment.NewLine +
                     "" + Environment.NewLine +
-                    "CREATE TABLE IF NOT EXISTS `Users` (" + Environment.NewLine +
+                    "DROP TABLE IF EXISTS `Users`;" + Environment.NewLine +
+                    "DROP TABLE IF EXISTS `Contacts`;" + Environment.NewLine +
+                    "CREATE TABLE `Users` (" + Environment.NewLine +
                     "    `ID` INT NOT NULL PRIMARY KEY AUTO_INCREMENT," + Environment.NewLine +
                     "    `Name` VARCHAR(30) NOT NULL UNIQUE," + Environment.NewLine +
-                    "    `Password` VARCHAR(30) NOT NULL," + Environment.NewLine +
+                    "    `Password` VARCHAR(26) NOT NULL," + Environment.NewLine +
                     "    `Online` TINYINT(1) NOT NULL DEFAULT 0," + Environment.NewLine +
                     "    `Socket` VARCHAR(51) NULL," + Environment.NewLine +
                     "    `LastOnline` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," + Environment.NewLine +
                     "    `Registered` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" + Environment.NewLine +
                     "    );" + Environment.NewLine +
-                    "CREATE TABLE IF NOT EXISTS `Contacts` (" + Environment.NewLine +
+                    "CREATE TABLE `Contacts` (" + Environment.NewLine +
                     "    `ID_1` INT NOT NULL," + Environment.NewLine +
                     "    `ID_2` INT NOT NULL," + Environment.NewLine +
                     "    `1To2` TINYINT(1) NOT NULL DEFAULT 0," + Environment.NewLine +
@@ -281,6 +284,9 @@ namespace ChatTwo_Server
                     "CREATE DEFINER=CURRENT_USER PROCEDURE `StatusIntervalUpdate`()" + Environment.NewLine +
                     "    MODIFIES SQL DATA" + Environment.NewLine +
                     "BEGIN" + Environment.NewLine +
+                    "    SELECT `ID` FROM `Users`" + Environment.NewLine +
+                    "        WHERE (`Online` = 1) " + Environment.NewLine +
+                    "          AND NOT (`LastOnline` BETWEEN timestamp(DATE_SUB(NOW(), INTERVAL 10 SECOND)) AND NOW());" + Environment.NewLine +
                     "    UPDATE `Users`" + Environment.NewLine +
                     "        SET `Online` = 0," + Environment.NewLine +
                     "            `Socket` = NULL" + Environment.NewLine +
