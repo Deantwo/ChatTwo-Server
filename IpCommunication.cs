@@ -16,13 +16,6 @@ namespace ChatTwo_Server
             get { return _online; }
         }
 
-        protected IPEndPoint _socketLocal;
-        public IPEndPoint SocketLocal
-        {
-            set { _socketLocal = value; }
-            get { return _socketLocal; }
-        }
-
         protected virtual void OnMessageReceived(MessageReceivedEventArgs e)
         {
             EventHandler<MessageReceivedEventArgs> handler = MessageReceived;
@@ -60,10 +53,42 @@ namespace ChatTwo_Server
             //// Check if the port number is in use.
             //bool isInUse = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveUdpListeners().Any(p => p.Port == port);
 
-            // Not implemented yet.
-
-            return false;
+            // Rather than just checking if the portnumber is in use, which only causes "new UdpClient(port)" to fail, I want to test if the server can hit it self by pinging the external IP address.
+            try
+            {
+                using (UdpClient tempClient = new UdpClient(0))
+                {
+                    #region tempClient.Client.IOControl // Windows UDP Bugfix
+                    // http://stackoverflow.com/questions/7201862/an-existing-connection-was-forcibly-closed-by-the-remote-host
+                    const uint IOC_IN = 0x80000000;
+                    const uint IOC_VENDOR = 0x18000000;
+                    uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
+                    tempClient.Client.IOControl((int)SIO_UDP_CONNRESET, new byte[] { Convert.ToByte(false) }, null);
+                    #endregion
+                    byte[] messageBytes = new byte[] { 0xEC };
+                    tempClient.Send(messageBytes, messageBytes.Length, address); // Send the message.
+                }
+            }
+            catch (SocketException ex)
+            {
+                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send out an EtherConnection test message:");
+                System.Diagnostics.Debug.WriteLine("### " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
+                return false;
+            }
+            return true;
         }
+
+        protected void OnEtherConnectionReply(EventArgs e)
+        {
+            EventHandler<EventArgs> handler = EtherConnectionReply;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        public event EventHandler<EventArgs> EtherConnectionReply;
 
         public bool Start(int serverPort)
         {
@@ -91,7 +116,7 @@ namespace ChatTwo_Server
             _threadMessageListener.Name = "Listen Thread (ReceiveMessage method)";
             _threadMessageListener.Start();
             _threadMessageSending = new Thread(new ThreadStart(MessageTransmissionControl));
-            _threadMessageSending.Name = "Message Ecoding Thread (MessageTransmissionControl method)";
+            _threadMessageSending.Name = "Message Sending Thread (MessageTransmissionControl method)";
             _threadMessageSending.Start();
             return true;
         }
@@ -102,7 +127,9 @@ namespace ChatTwo_Server
             {
                 _online = false;
                 //_threadMessageListener.Abort(); // This caused some problems.
-                _threadMessageListener.Join(); // Wait for ListenThread's next "am I online?" check.
+                _threadMessageListener.Join(); // Wait for _threadMessageListener's next "am I online?" check.
+                //_threadMessageSending.Abort(); // This caused some problems.
+                _threadMessageSending.Join(); // Wait for _threadMessageSending's next "am I online?" check.
                 _client.Close();
             }
         }
@@ -130,7 +157,22 @@ namespace ChatTwo_Server
                     byte[] receivedBytes = _client.Receive(ref remoteSender);
                     if (receivedBytes != null && receivedBytes.Length != 0)
                     {
-                        if (!(receivedBytes[0] == 0xCE && receivedBytes[receivedBytes.Length - 1] == 0xCE))
+                        if (receivedBytes.Length == ByteHelper.HashByteLength + 2 && receivedBytes[0] == 0xCE && receivedBytes[receivedBytes.Length - 1] == 0xCE)
+                        {
+                            if (_messageSendingControlList.Count != 0)
+                            {
+                                // The received message is a ACK message.
+                                string hash = OpenAck(receivedBytes);
+                                ControlledMessage message = _messageSendingControlList.Find(x => x.Hash == hash);
+                                _messageSendingControlList.Remove(message);
+                            }
+                        }
+                        else if (receivedBytes.Length == 1 && receivedBytes[0] == 0xEC)
+                        {
+                            // Fire an OnEtherConnectionReply event.
+                            OnEtherConnectionReply(null);
+                        }
+                        else
                         {
                             // Send back an ACK message.
                             string hash = ByteHelper.GetHashString(receivedBytes);
@@ -145,19 +187,12 @@ namespace ChatTwo_Server
                                 if (_messageReceivingControlList.Count > 5) // Only keep the latest 5 messages.
                                     _messageReceivingControlList.RemoveAt(0);
 
-                                // Fire an MessageReceived event.
+                                // Fire an OnMessageReceived event.
                                 MessageReceivedEventArgs args = new MessageReceivedEventArgs();
                                 args.Sender = remoteSender;
                                 args.Data = receivedBytes;
                                 OnMessageReceived(args);
                             }
-                        }
-                        else if (_messageSendingControlList.Count != 0)
-                        {
-                            // The received message is a ACK message.
-                            string hash = OpenAck(receivedBytes);
-                            ControlledMessage message = _messageSendingControlList.Find(x => x.Hash == hash);
-                            _messageSendingControlList.Remove(message);
                         }
                     }
                 }

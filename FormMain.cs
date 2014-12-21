@@ -28,6 +28,7 @@ namespace ChatTwo_Server
             _server.MessageReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
             ChatTwo_Server_Protocol.MessageTransmission += _server.SendMessage;
             DatabaseCommunication.UserStatusChange += ChatTwo_Server_Protocol.TellUserAboutContactstatusChange;
+            _server.EtherConnectionReply += EtherConnectReply;
 
             notifyIcon1.BalloonTipTitle = this.Text;
             notifyIcon1.Text = this.Text;
@@ -212,20 +213,19 @@ namespace ChatTwo_Server
                 if (System.Net.IPAddress.TryParse(tbxIpExternalAddress.Text, out address))
                 {
                     // Check the result of the port-forward test.
-                    bool portforwardTestSuccessful = UdpCommunication.TestPortforward(new System.Net.IPEndPoint(address, (int)nudIpExternalPort.Value));
-                    if (portforwardTestSuccessful)
+                    bool portforwardTestStartSuccessful = UdpCommunication.TestPortforward(new System.Net.IPEndPoint(address, (int)nudIpExternalPort.Value));
+                    if (portforwardTestStartSuccessful)
                     {
-                        toolStripStatusLabel1.Text = "UDP port-forward test: successful";
-                        lblIpConnection.Text = "Test: successful";
+                        lblIpConnection.Text = "Test: testing...";
                         toolTip1.SetToolTip(lblIpConnection, "");
-                        btnIpConnect.Enabled = true;
+                        timer1.Start();
                         return;
                     }
                     else
                     {
                         errorMessage = "The UDP port-forward test failed";
                         errorTip = "." + Environment.NewLine + Environment.NewLine +
-                            "Please ensure your router is correctly configured.";
+                            "Could not start the test. Please ensure you have an internet connection.";
                         lblIpConnection.Text = "Test: failed";
                     }
                 }
@@ -250,6 +250,44 @@ namespace ChatTwo_Server
                 statusStrip1.Refresh(); // Has to be done or the statusStrip won't display the new toolStripStatusLabel text.
 
                 throw new NotImplementedException("TCP is not implemented yet.");
+            }
+        }
+
+        public void EtherConnectReply(object sender, EventArgs args)
+        {
+            if (lblIpConnection.InvokeRequired)
+            { // Needed for multi-threading cross calls.
+                this.Invoke(new Action<object, EventArgs>(this.EtherConnectReply), new object[] { sender, args });
+            }
+            else
+            {
+                if (timer1.Enabled)
+                {
+                    timer1.Stop();
+                    toolStripStatusLabel1.Text = "UDP port-forward test: successful";
+                    lblIpConnection.Text = "Test: successful";
+                    toolTip1.SetToolTip(lblIpConnection, "");
+                }
+            }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (timer1.Enabled)
+            {
+                timer1.Stop();
+                string errorMessage;
+                string errorTip;
+
+                errorMessage = "The UDP port-forward test failed";
+                errorTip = "." + Environment.NewLine + Environment.NewLine +
+                    "Please ensure your router is correctly configured.";
+                lblIpConnection.Text = "Test: failed";
+
+                MessageBox.Show(errorMessage + errorTip, "Port-Forward Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                toolStripStatusLabel1.Text = "UDP port-forward test: failed. " + errorMessage;
+                lblIpConnection.Image = _infoTip;
+                toolTip1.SetToolTip(lblIpConnection, errorMessage + errorTip);
             }
         }
         #endregion

@@ -82,6 +82,7 @@
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.textBox2 = new System.Windows.Forms.TextBox();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.contextMenuStrip1.SuspendLayout();
             this.menuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
@@ -654,6 +655,11 @@
             this.textBox2.Size = new System.Drawing.Size(100, 20);
             this.textBox2.TabIndex = 12;
             // 
+            // timer1
+            // 
+            this.timer1.Interval = 5000;
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            // 
             // FormMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -746,6 +752,7 @@
         private System.Windows.Forms.Label lblIpExternalPort;
         private System.Windows.Forms.CheckBox chxIpTcp;
         private System.Windows.Forms.CheckBox chxIpUdp;
+        private System.Windows.Forms.Timer timer1;
     }
 }
 
