@@ -140,6 +140,7 @@ namespace ChatTwo_Server
                 btnSqlConnect.Text = "Stop Database Connection";
                 tabSqlTest.Parent = tabControl1;
             }
+            UpdateServerStatus();
         }
 
         private void btnSqlCreate_Click(object sender, EventArgs e)
@@ -189,6 +190,7 @@ namespace ChatTwo_Server
                 _server.Start((int)nudIpPort.Value);
                 btnIpConnect.Text = "Stop IP Connection";
             }
+            UpdateServerStatus();
         }
 
         private void tbxIp_ExternalIpValuesChanged(object sender, EventArgs e)
@@ -291,6 +293,17 @@ namespace ChatTwo_Server
             }
         }
         #endregion
+
+        private void UpdateServerStatus()
+        {
+            lblServerStatus.Text = "Server Status: ";
+            if (!_server.Active)
+                lblServerStatus.Text += "Offline";
+            else if (!DatabaseCommunication.Active)
+                lblServerStatus.Text += "No database connection";
+            else
+                lblServerStatus.Text += "Online";
+        }
 
         public void WriteLog(string log, int colorARGB = -16777216) // 0xFF000000 (Color.Black)
         {

@@ -48,6 +48,7 @@
             this.tabLog = new System.Windows.Forms.TabPage();
             this.rtbxLog = new System.Windows.Forms.RichTextBox();
             this.tabSetup = new System.Windows.Forms.TabPage();
+            this.lblServerStatus = new System.Windows.Forms.Label();
             this.groupBoxIP = new System.Windows.Forms.GroupBox();
             this.chxIpTcp = new System.Windows.Forms.CheckBox();
             this.chxIpUdp = new System.Windows.Forms.CheckBox();
@@ -258,6 +259,7 @@
             // 
             // tabSetup
             // 
+            this.tabSetup.Controls.Add(this.lblServerStatus);
             this.tabSetup.Controls.Add(this.groupBoxIP);
             this.tabSetup.Controls.Add(this.groupBoxSql);
             this.tabSetup.Location = new System.Drawing.Point(4, 22);
@@ -267,6 +269,15 @@
             this.tabSetup.TabIndex = 2;
             this.tabSetup.Text = "Setup";
             this.tabSetup.UseVisualStyleBackColor = true;
+            // 
+            // lblServerStatus
+            // 
+            this.lblServerStatus.Location = new System.Drawing.Point(6, 222);
+            this.lblServerStatus.Name = "lblServerStatus";
+            this.lblServerStatus.Size = new System.Drawing.Size(444, 63);
+            this.lblServerStatus.TabIndex = 7;
+            this.lblServerStatus.Text = "Server Status: Offline";
+            this.lblServerStatus.TextAlign = System.Drawing.ContentAlignment.TopCenter;
             // 
             // groupBoxIP
             // 
@@ -753,6 +764,7 @@
         private System.Windows.Forms.CheckBox chxIpTcp;
         private System.Windows.Forms.CheckBox chxIpUdp;
         private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Label lblServerStatus;
     }
 }
 
