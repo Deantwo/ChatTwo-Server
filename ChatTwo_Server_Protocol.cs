@@ -174,11 +174,19 @@ namespace ChatTwo_Server
             OnMessageTransmission(args);
         }
 
-        public static void TellUserAboutContactstatusChange(object sender, OnUserStatusChangeEventArgs args)
+        public static void TellUserAboutContactstatusChange(object sender, UserStatusChangeEventArgs args)
         {
             byte[] dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(args.IdIs), new byte[] { Convert.ToByte(args.Online) });
             if (args.Online)
             {
+                IPEndPoint socket;
+                if (args.Socket != null)
+                    socket = args.Socket;
+                else if (_users.Any(x => x.ID == args.IdIs))
+                    socket = _users.Find(x => x.ID == args.IdIs).Socket;
+                else
+                    // This shouldn't really happen. I should make the server simply manage online status and sockets only in the memory, and not in the database.
+                    throw new NotImplementedException("Could not find a socket for the user[" + args.IdIs + "].");
                 // 0x01 for UDP only.
                 byte[] socketBytes = ByteHelper.ConcatinateArray(new byte[] {0x01}, BitConverter.GetBytes(args.Socket.Port), args.Socket.Address.GetAddressBytes());
                 dataBytes = ByteHelper.ConcatinateArray(dataBytes, socketBytes);

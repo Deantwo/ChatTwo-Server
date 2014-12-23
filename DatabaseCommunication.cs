@@ -650,8 +650,8 @@ namespace ChatTwo_Server
                 }
                 foreach (int contactId in contactIds)
                 {
-                    // Fire an UserStatusChange event.
-                    OnUserStatusChangeEventArgs args = new OnUserStatusChangeEventArgs();
+                    // Fire an OnUserStatusChange event.
+                    UserStatusChangeEventArgs args = new UserStatusChangeEventArgs();
                     args.TellId = contactId;
                     args.IdIs = userId;
                     args.Online = comesOnline;
@@ -661,18 +661,18 @@ namespace ChatTwo_Server
         }
         #endregion
 
-        private static void OnUserStatusChange(OnUserStatusChangeEventArgs e)
+        private static void OnUserStatusChange(UserStatusChangeEventArgs e)
         {
-            EventHandler<OnUserStatusChangeEventArgs> handler = UserStatusChange;
+            EventHandler<UserStatusChangeEventArgs> handler = UserStatusChange;
             if (handler != null)
             {
                 handler(null, e);
             }
         }
-        public static event EventHandler<OnUserStatusChangeEventArgs> UserStatusChange;
+        public static event EventHandler<UserStatusChangeEventArgs> UserStatusChange;
     }
 
-    public class OnUserStatusChangeEventArgs : EventArgs
+    public class UserStatusChangeEventArgs : EventArgs
     {
         public int TellId { get; set; }
         public int IdIs { get; set; }
