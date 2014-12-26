@@ -16,9 +16,17 @@ Features
 - Text chat
 - Peer-to-peer communication
 
+Current State
+==============
+
+- Creation of users from the client
+- User login by client
+- ...
+
 Requirements
 ==============
 
+**Both:**
 - .Net Framework 4.0
 
 **ChatTwo-Server:**
