@@ -71,7 +71,7 @@ namespace ChatTwo_Server
             }
             catch (SocketException ex)
             {
-                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send out an EtherConnection test message:");
+                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send out an EtherConnection test message:"); // Called it "EtherConnection" because 0xEC was a nice hex value.
                 System.Diagnostics.Debug.WriteLine("### " + ex.Message);
                 System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
                 return false;
@@ -249,8 +249,9 @@ namespace ChatTwo_Server
                     {
                         ctrlMessage.LastTry = DateTime.Now;
                         ctrlMessage.Attempts++;
-#if DEBUG                  
-                        //_messageSendingControlList.Remove(ctrlMessage);
+#if !DEBUG
+                        if (ctrlMessage.Attempts == 5)
+                            _messageSendingControlList.Remove(ctrlMessage);
 #endif
                     }
                 }
@@ -265,8 +266,14 @@ namespace ChatTwo_Server
             }
             catch (SocketException ex)
             {
+#if DEBUG
                 throw;
+#else
+                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send ControlledMessage:");
+                System.Diagnostics.Debug.WriteLine("### " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
                 return false;
+#endif
             }
             return true;
         }
