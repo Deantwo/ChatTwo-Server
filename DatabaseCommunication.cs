@@ -557,7 +557,7 @@ namespace ChatTwo_Server
             return (cmdResult != 0);
         }
 
-        static public void StatusIntervalUpdate(string connString) // Threaded method.
+        static public void StatusIntervalUpdate(string connString) // Threaded looping method.
         {
             using (MySqlConnection intervalConn = new MySqlConnection(connString))
             {
