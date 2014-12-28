@@ -16,22 +16,22 @@ namespace ChatTwo_Server
             get { return _online; }
         }
 
-        protected virtual void OnMessageReceived(MessageReceivedEventArgs e)
+        protected virtual void OnPacketReceived(PacketReceivedEventArgs e)
         {
-            EventHandler<MessageReceivedEventArgs> handler = MessageReceived;
+            EventHandler<PacketReceivedEventArgs> handler = PacketReceived;
             if (handler != null)
             {
                 handler(this, e);
             }
         }
 
-        public event EventHandler<MessageReceivedEventArgs> MessageReceived;
+        public event EventHandler<PacketReceivedEventArgs> PacketReceived;
     }
 
     class UdpCommunication : IpCommunication
     {
-        protected Thread _threadMessageListener;
-        protected Thread _threadMessageSending;
+        protected Thread _threadPacketListener;
+        protected Thread _threadPacketSending;
 
         protected UdpClient _client;
         public UdpClient Client
@@ -45,9 +45,13 @@ namespace ChatTwo_Server
             get { return ((IPEndPoint)_client.Client.LocalEndPoint).Port; }
         }
 
-        protected List<ControlledMessage> _messageSendingControlList = new List<ControlledMessage>();
+        protected List<ControlledPacket> _messageSendingControlList = new List<ControlledPacket>();
         protected List<string> _messageReceivingControlList = new List<string>();
 
+        /// <summary>
+        /// Creates a temp UdpClient and sends an EtherConnectionTest packet to the target address.
+        /// </summary>
+        /// <param name="address">Target address for the EtherConnectionTest packet.</param>
         public static bool TestPortforward(IPEndPoint address)
         {
             //// Check if the port number is in use.
@@ -59,7 +63,8 @@ namespace ChatTwo_Server
                 using (UdpClient tempClient = new UdpClient(0))
                 {
                     #region tempClient.Client.IOControl // Windows UDP Bugfix
-                    // http://stackoverflow.com/questions/7201862/an-existing-connection-was-forcibly-closed-by-the-remote-host
+                    // This is a fix to make the UdpClient ignore some weird behavior from Windows.
+                    // Read more here: http://stackoverflow.com/a/7478498
                     const uint IOC_IN = 0x80000000;
                     const uint IOC_VENDOR = 0x18000000;
                     uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
@@ -71,7 +76,7 @@ namespace ChatTwo_Server
             }
             catch (SocketException ex)
             {
-                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send out an EtherConnection test message:"); // Called it "EtherConnection" because 0xEC was a nice hex value.
+                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send out an EtherConnectionTest packet:"); // Called it "EtherConnection" because 0xEC was a nice hex value.
                 System.Diagnostics.Debug.WriteLine("### " + ex.Message);
                 System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
                 return false;
@@ -90,14 +95,19 @@ namespace ChatTwo_Server
 
         public event EventHandler<EventArgs> EtherConnectionReply;
 
+        /// <summary>
+        /// Starts the UdpClient and the threaded methods.
+        /// </summary>
+        /// <param name="serverPort">Port number the UdpClient should use. 0 (zero) will let the OS choose a random port.</param>
         public bool Start(int serverPort)
         {
             try
             {
                 _client = new UdpClient(serverPort);
-                _client.Client.ReceiveTimeout = 1000;
+                _client.Client.ReceiveTimeout = 1000; // This causes the _client.Receive(ref remoteSender) methtod to actually timeout, else it would simply freeze the _threadPacketListener thread.
                 #region _client.Client.IOControl // Windows UDP Bugfix
-                // http://stackoverflow.com/questions/7201862/an-existing-connection-was-forcibly-closed-by-the-remote-host
+                // This is a fix to make the UdpClient ignore some weird behavior from Windows.
+                // Read more here: http://stackoverflow.com/a/7478498
                 const uint IOC_IN = 0x80000000;
                 const uint IOC_VENDOR = 0x18000000;
                 uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
@@ -112,28 +122,35 @@ namespace ChatTwo_Server
                 return false;
             }
             _online = true;
-            _threadMessageListener = new Thread(new ThreadStart(ReceiveMessage));
-            _threadMessageListener.Name = "Listen Thread (ReceiveMessage method)";
-            _threadMessageListener.Start();
-            _threadMessageSending = new Thread(new ThreadStart(MessageTransmissionControl));
-            _threadMessageSending.Name = "Message Sending Thread (MessageTransmissionControl method)";
-            _threadMessageSending.Start();
+            _threadPacketListener = new Thread(new ThreadStart(ReceivePacket));
+            _threadPacketListener.Name = "Packet Listening Thread (ReceivePacket method)";
+            _threadPacketListener.Start();
+            _threadPacketSending = new Thread(new ThreadStart(PacketTransmissionControl));
+            _threadPacketSending.Name = "Packet Sending Thread (PacketTransmissionControl method)";
+            _threadPacketSending.Start();
             return true;
         }
 
+        /// <summary>
+        /// Stops all threaded methods and stops the UdpClient. Use this before closing the application!
+        /// </summary>
         public void Stop()
         {
             if (_online)
             {
                 _online = false;
-                //_threadMessageListener.Abort(); // This caused some problems.
-                _threadMessageListener.Join(); // Wait for _threadMessageListener's next "am I online?" check.
-                //_threadMessageSending.Abort(); // This caused some problems.
-                _threadMessageSending.Join(); // Wait for _threadMessageSending's next "am I online?" check.
+                //_threadPacketListener.Abort(); // This caused some problems.
+                _threadPacketListener.Join(); // Wait for _threadPacketListener's next "am I online?" check.
+                //_threadPacketSending.Abort(); // This caused some problems.
+                _threadPacketSending.Join(); // Wait for _threadPacketSending's next "am I online?" check.
                 _client.Close();
             }
         }
 
+        /// <summary>
+        /// Create an ACK packet from a base64 hash string.
+        /// </summary>
+        /// <param name="hash">Base64 hash string to be used.</param>
         protected byte[] CreateAck(string hash)
         {
             byte[] ackTag = new byte[] { 0xCE }; // 0xCE = 206
@@ -141,13 +158,21 @@ namespace ChatTwo_Server
             return ackBytes;
         }
 
-        protected string OpenAck(byte[] bytes)
+        /// <summary>
+        /// Convert an ACK packet to a base64 hash string.
+        /// </summary>
+        /// <param name="packetBytes">ACK packet's byte content.</param>
+        protected string OpenAck(byte[] packetBytes)
         {
-            string ackHash = Convert.ToBase64String(bytes, 1, ByteHelper.HashByteLength);
+            string ackHash = Convert.ToBase64String(packetBytes, 1, ByteHelper.HashByteLength);
             return ackHash;
         }
 
-        public void ReceiveMessage() // Threaded looping method.
+        /// <summary>
+        /// This is a threaded method that keeps looping while _online is true.
+        /// It will receive UDP messages on the UdpClient's port number and forward them to the OnPacketReceived event.
+        /// </summary>
+        public void ReceivePacket() // Threaded looping method.
         {
             while (_online)
             {
@@ -163,8 +188,9 @@ namespace ChatTwo_Server
                             {
                                 // The received message is a ACK message.
                                 string hash = OpenAck(receivedBytes);
-                                ControlledMessage message = _messageSendingControlList.Find(x => x.Hash == hash);
-                                _messageSendingControlList.Remove(message);
+                                ControlledPacket packet = _messageSendingControlList.Find(x => x.Hash == hash);
+                                if (packet != null)
+                                    _messageSendingControlList.Remove(packet);
                             }
                         }
                         else if (receivedBytes.Length == 1 && receivedBytes[0] == 0xEC)
@@ -174,7 +200,7 @@ namespace ChatTwo_Server
                         }
                         else
                         {
-                            // Send back an ACK message.
+                            // Send back an ACK packet.
                             string hash = ByteHelper.GetHashString(receivedBytes);
                             byte[] ackBytes = CreateAck(hash);
                             _client.Send(ackBytes, ackBytes.Length, remoteSender);
@@ -187,11 +213,11 @@ namespace ChatTwo_Server
                                 if (_messageReceivingControlList.Count > 5) // Only keep the latest 5 messages.
                                     _messageReceivingControlList.RemoveAt(0);
 
-                                // Fire an OnMessageReceived event.
-                                MessageReceivedEventArgs args = new MessageReceivedEventArgs();
+                                // Fire an OnPacketReceived event.
+                                PacketReceivedEventArgs args = new PacketReceivedEventArgs();
                                 args.Sender = remoteSender;
                                 args.Data = receivedBytes;
-                                OnMessageReceived(args);
+                                OnPacketReceived(args);
                             }
                         }
                     }
@@ -200,7 +226,7 @@ namespace ChatTwo_Server
                 {
                     if (ex.SocketErrorCode != SocketError.TimedOut)
                     {
-                        System.Diagnostics.Debug.WriteLine("### " + _threadMessageListener.Name + " has crashed:");
+                        System.Diagnostics.Debug.WriteLine("### " + _threadPacketListener.Name + " has crashed:");
                         System.Diagnostics.Debug.WriteLine("### " + ex.Message);
                         System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
                         break;
@@ -211,65 +237,78 @@ namespace ChatTwo_Server
             }
         }
 
-        public void SendMessage(object sender, MessageTransmissionEventArgs args)
+        /// <summary>
+        /// Send a packet to a target IP address.
+        /// </summary>
+        /// <param name="sender">Default object parameter for event receiving methods. Unused here.</param>
+        /// <param name="args">PacketTransmissionEventArgs object containing the byte array to be send and the destination IP address.</param>
+        public void SendPacket(object sender, PacketTransmissionEventArgs args)
         {
-            ControlledMessage ctrlMessage = new ControlledMessage();
-            ctrlMessage.Recipient = args.Ip;
-            ctrlMessage.Data = args.MessageBytes;
+            ControlledPacket ctrlPacket = new ControlledPacket();
+            ctrlPacket.Recipient = args.Destination;
+            ctrlPacket.Data = args.PacketContent;
 
-            _messageSendingControlList.Add(ctrlMessage);
+            _messageSendingControlList.Add(ctrlPacket);
         }
 
-        protected void MessageTransmissionControl() // Threaded looping method.
+        /// <summary>
+        /// This is a threaded method that keeps looping while _online is true.
+        /// It will check the _packetSendingControlList list and try to send all packets on the list 5 times per second.
+        /// </summary>
+        protected void PacketTransmissionControl() // Threaded looping method.
         {
             try
             {
                 while (_online)
                 {
-                    CheckMessageControlList();
+                    CheckPacketControlList();
                     Thread.Sleep(200);
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("### " + _threadMessageSending.Name + " has crashed:");
+                System.Diagnostics.Debug.WriteLine("### " + _threadPacketSending.Name + " has crashed:");
                 System.Diagnostics.Debug.WriteLine("### " + ex.Message);
                 System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
             }
         }
 
-        protected void CheckMessageControlList()
+        protected void CheckPacketControlList()
         {
             if (_messageSendingControlList.Count != 0)
             {
-                List<ControlledMessage> temp = _messageSendingControlList.FindAll(x => (x.LastTry == null || (DateTime.Now - x.LastTry).TotalMilliseconds > 400) && x.Attempts < 5);
-                foreach (ControlledMessage ctrlMessage in temp)
+                List<ControlledPacket> temp = _messageSendingControlList.FindAll(x => (x.LastTry == null || (DateTime.Now - x.LastTry).TotalMilliseconds > 400) && x.Attempts < 5);
+                foreach (ControlledPacket ctrlPacket in temp)
                 {
-                    if (SendControlledMessage(ctrlMessage))
+                    if (SendControlledPacket(ctrlPacket))
                     {
-                        ctrlMessage.LastTry = DateTime.Now;
-                        ctrlMessage.Attempts++;
+                        ctrlPacket.LastTry = DateTime.Now;
+                        ctrlPacket.Attempts++;
 #if !DEBUG
-                        if (ctrlMessage.Attempts == 5)
-                            _messageSendingControlList.Remove(ctrlMessage);
+                        if (ctrlPacket.Attempts == 5)
+                            _messageSendingControlList.Remove(ctrlPacket);
 #endif
                     }
                 }
             }
         }
 
-        protected bool SendControlledMessage(ControlledMessage message)
+        /// <summary>
+        /// Attempt to send the controlled packet. Return true if successful.
+        /// </summary>
+        /// <param name="ctrlPacket">Packet to be sent.</param>
+        protected bool SendControlledPacket(ControlledPacket ctrlPacket)
         {
             try
             {
-                _client.Send(message.Data, message.Data.Length, message.Recipient); // Send the message.
+                _client.Send(ctrlPacket.Data, ctrlPacket.Data.Length, ctrlPacket.Recipient); // Send the packet.
             }
             catch (SocketException ex)
             {
 #if DEBUG
                 throw;
 #else
-                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send ControlledMessage:");
+                System.Diagnostics.Debug.WriteLine("### An error happened when trying to send ControlledPacket:");
                 System.Diagnostics.Debug.WriteLine("### " + ex.Message);
                 System.Diagnostics.Debug.WriteLine("### " + ex.ToString());
                 return false;
@@ -279,13 +318,19 @@ namespace ChatTwo_Server
         }
     }
 
-    public class MessageReceivedEventArgs : EventArgs
+    public class PacketReceivedEventArgs : EventArgs
     {
         public IPEndPoint Sender { get; set; }
         public byte[] Data { get; set; }
     }
 
-    internal class ControlledMessage
+    public class PacketTransmissionEventArgs : EventArgs
+    {
+        public IPEndPoint Destination { get; set; }
+        public byte[] PacketContent { get; set; }
+    }
+
+    internal class ControlledPacket
     {
         public IPEndPoint Recipient { get; set; }
         public byte[] Data { get; set; }

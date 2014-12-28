@@ -16,7 +16,7 @@ namespace ChatTwo_Server
             set { _users = value; }
         }
 
-        public static void MessageReceivedHandler(object sender, MessageReceivedEventArgs args)
+        public static void MessageReceivedHandler(object sender, PacketReceivedEventArgs args)
         {
             if (!DatabaseCommunication.Active)
                 throw new NotImplementedException("Database connection was not active and a reply for this have not been implemented yet.");
@@ -168,9 +168,9 @@ namespace ChatTwo_Server
             messageBytes = ChatTwo_Protocol.AddSignatureAndMac(messageBytes, sharedSecret);
 
             // Fire an OnMessageTransmission event.
-            MessageTransmissionEventArgs args = new MessageTransmissionEventArgs();
-            args.Ip = message.Ip;
-            args.MessageBytes = messageBytes;
+            PacketTransmissionEventArgs args = new PacketTransmissionEventArgs();
+            args.Destination = message.Ip;
+            args.PacketContent = messageBytes;
             OnMessageTransmission(args);
         }
 
@@ -194,14 +194,14 @@ namespace ChatTwo_Server
             MessageToUser(args.TellId, ChatTwo_Protocol.MessageType.ContactStatus, dataBytes);
         }
 
-        private static void OnMessageTransmission(MessageTransmissionEventArgs e)
+        private static void OnMessageTransmission(PacketTransmissionEventArgs e)
         {
-            EventHandler<MessageTransmissionEventArgs> handler = MessageTransmission;
+            EventHandler<PacketTransmissionEventArgs> handler = MessageTransmission;
             if (handler != null)
             {
                 handler(null, e);
             }
         }
-        public static event EventHandler<MessageTransmissionEventArgs> MessageTransmission;
+        public static event EventHandler<PacketTransmissionEventArgs> MessageTransmission;
     }
 }

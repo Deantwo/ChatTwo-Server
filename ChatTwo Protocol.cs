@@ -67,7 +67,7 @@ namespace ChatTwo_Server
             return ByteHelper.GetHashString(ByteHelper.ConcatinateArray(ByteHelper.GetHashBytes(messageBytes), Convert.FromBase64String(sharedSecret)));
         }
 
-        public static Message MessageReceivedHandler(MessageReceivedEventArgs args)
+        public static Message MessageReceivedHandler(PacketReceivedEventArgs args)
         {
             args.Data = ChatTwo_Protocol.RemoveSignatureAndMac(args.Data);
 
@@ -98,15 +98,15 @@ namespace ChatTwo_Server
             return messageBytes;
         }
 
-        private static void OnMessageTransmission(MessageTransmissionEventArgs e)
+        private static void OnMessageTransmission(PacketTransmissionEventArgs e)
         {
-            EventHandler<MessageTransmissionEventArgs> handler = MessageTransmission;
+            EventHandler<PacketTransmissionEventArgs> handler = MessageTransmission;
             if (handler != null)
             {
                 handler(null, e);
             }
         }
-        public static event EventHandler<MessageTransmissionEventArgs> MessageTransmission;
+        public static event EventHandler<PacketTransmissionEventArgs> MessageTransmission;
     }
 
     public class Message
@@ -118,11 +118,5 @@ namespace ChatTwo_Server
         public string Timez { get; set; }
         public byte[] Data { get; set; }
         public string Text { get; set; }
-    }
-
-    public class MessageTransmissionEventArgs : EventArgs
-    {
-        public IPEndPoint Ip { get; set; }
-        public byte[] MessageBytes { get; set; }
     }
 }
