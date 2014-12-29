@@ -156,7 +156,8 @@ namespace ChatTwo_Server
             {
                 // !? This will only happen if the login attempt failed.
                 // But because the login attempt failed, I don't save a UserObj object in the _users list, which in turn mean I don't have a sharedSecret saved!
-                sharedSecret = ChatTwo_Protocol.DefaultSharedSecret;
+                //sharedSecret = 
+                throw new NotImplementedException("Login attempt failed." + Environment.NewLine + "But because the login attempt failed, I don't save a UserObj object in the _users list, which in turn mean I don't have a sharedSecret saved!");
             }
             else
             {
