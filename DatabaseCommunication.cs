@@ -27,14 +27,22 @@ namespace ChatTwo_Server
         // StatusIntervalUpdate thread.
         private static Thread _threadStatusIntervalUpdate;
 
+        // May have to implement this later. But only needed for the DateTime objects.
         //private  static CultureInfo _ci = CultureInfo.CreateSpecificCulture("en-US");
 
         // SqlConnection object is saved here for continued use.
         private static MySqlConnection _conn;
 
+        // My attempt at making the MySqlConnection not close before all tasks are done using it.
+        private static int _SqlWorker = 0;
+
         /// <summary>
-        /// Creates the SqlConnection object.
+        /// Creates the SqlConnection object and starts threaded methods.
         /// </summary>
+        /// <param name="user">MySQL "User id" with either root access or access to the `ChatTwo` database.</param>
+        /// <param name="password">Password of the user.</param>
+        /// <param name="ip">IP address of the machine hosting the MySQL server.</param>
+        /// <param name="port">Port number the MySQL server is running on.</param>
         public static void Connect(string user, string password, string ip, int port)
         {
             MySqlConnectionStringBuilder connBuilder = new MySqlConnectionStringBuilder();
@@ -48,20 +56,25 @@ namespace ChatTwo_Server
             // Create the SqlConnection object using the saved IP address from settings.
             _conn = new MySqlConnection(connBuilder.ConnectionString);
 
-            //// Start the thread.
+            // Set the status of the database connection to on.
             _online = true;
+
+            // Start the thread.
             _threadStatusIntervalUpdate = new Thread(() => StatusIntervalUpdate(connBuilder.ConnectionString));
             _threadStatusIntervalUpdate.Name = "StatusIntervalUpdate Thread (StatusIntervalUpdate method)";
             _threadStatusIntervalUpdate.Start();
         }
 
         /// <summary>
-        /// Creates the SqlConnection object.
+        /// Shuts down the database connection and gracefully stops threaded methods.
         /// </summary>
         public static void Disconnect()
         {
-            // Stop the thread.
+            // Set the status of the database connection to off.
+            // This also makes the threaded method stop gracefully.
             _online = false;
+
+            // Stop the thread.
             if (_threadStatusIntervalUpdate != null)
                 _threadStatusIntervalUpdate.Join();
 
@@ -69,13 +82,19 @@ namespace ChatTwo_Server
             _conn = null;
         }
 
-        private static int _SqlWorker = 0;
+        /// <summary>
+        /// Opens the MySqlConnection if it's not already open.
+        /// </summary>
         private static void Open()
         {
             if (_SqlWorker == 0)
                 _conn.Open();
             _SqlWorker++;
         }
+
+        /// <summary>
+        /// Closes the MySqlConnection if all tasks are down using it.
+        /// </summary>
         private static void Close()
         {
             _SqlWorker--;
@@ -97,9 +116,12 @@ namespace ChatTwo_Server
         }
 
         /// <summary>
-        /// Tests the connection to the SQL server and returns a string with the result.
-        /// This method and FormMain.ConnectToDatabase need to be rewritten.
+        /// Tests the connection to the SQL server and returns a ConnectionTestResult enum result.
         /// </summary>
+        /// <param name="user">MySQL "User id" with either root access or access to the `ChatTwo` database.</param>
+        /// <param name="password">Password of the user.</param>
+        /// <param name="ip">IP address of the machine hosting the MySQL server.</param>
+        /// <param name="port">Port number the MySQL server is running on.</param>
         public static ConnectionTestResult TestConnection(string user, string password, string ip, int port)
         {
             // Shorter timeout will make the user not have to wait as long.
@@ -172,13 +194,16 @@ namespace ChatTwo_Server
                             return ConnectionTestResult.MissingTable;
                         default:
                             // Unknown SQL error
-                            //return ConnectionTestResult.UnknownError;
+#if !DEBUG
+                            return ConnectionTestResult.UnknownError;
+#else
                             throw;
+#endif
                     }
                 }
                 finally
                 {
-                    if (testConn.State != System.Data.ConnectionState.Closed)
+                    if (testConn.State != ConnectionState.Closed)
                         testConn.Close();
                 }
             
@@ -188,7 +213,6 @@ namespace ChatTwo_Server
             }
 
             // If nothing bad happens, tell the user the program is ready.
-            //return "Ready";
             return ConnectionTestResult.Successful;
         }
         #endregion
@@ -197,6 +221,10 @@ namespace ChatTwo_Server
         /// <summary>
         /// Create the whole database from scratch.
         /// </summary>
+        /// <param name="user">MySQL "User id" with either root access or access to the `ChatTwo` database.</param>
+        /// <param name="password">Password of the user.</param>
+        /// <param name="ip">IP address of the machine hosting the MySQL server.</param>
+        /// <param name="port">Port number the MySQL server is running on.</param>
         public static bool CreateDatabase(string user, string password, string ip, int port)
         {
             int cmdResult = 0;
@@ -369,8 +397,12 @@ namespace ChatTwo_Server
         }
 
         /// <summary>
-        /// Create the whole database from scratch.
+        /// Update an out of date database.
         /// </summary>
+        /// <param name="user">MySQL "User id" with either root access or access to the `ChatTwo` database.</param>
+        /// <param name="password">Password of the user.</param>
+        /// <param name="ip">IP address of the machine hosting the MySQL server.</param>
+        /// <param name="port">Port number the MySQL server is running on.</param>
         public static bool UpdateDatabase(string user, string password, string ip, int port)
         {
             int cmdResult = 0;
@@ -434,8 +466,10 @@ namespace ChatTwo_Server
 
         #region Common routin
         /// <summary>
-        /// Create a user on the `Users` table.
+        /// Create a user on the `Users` table. Username is a unique column and this medthod will return false if it is already in use.
         /// </summary>
+        /// <param name="username">Username of the user to create.</param>
+        /// <param name="password">26 base64 character hash string of the user's password.</param>
         public static bool CreateUser(string username, string password)
         {
             int cmdResult = 0;
@@ -453,7 +487,9 @@ namespace ChatTwo_Server
                 }
                 catch (MySqlException ex)
                 {
-                    if (ex.Number == 1062)
+                    if (ex.Number == 1062) // http://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
+                        // (ER_DUP_ENTRY) Message: Duplicate entry '%s' for key %d
+                        // If the username is already in use.
                         return false;
                     throw ex;
                 }
@@ -462,9 +498,13 @@ namespace ChatTwo_Server
                     Close();
                 }
             }
-            return (cmdResult != 0);
+            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
 
+        /// <summary>
+        /// Read all database information about a user. Returns an UserObj with all the informatioin.
+        /// </summary>
+        /// <param name="id">ID number of the requested user.</param>
         static public UserObj ReadUser(int id)
         {
             UserObj cmdResult = null;
@@ -497,6 +537,11 @@ namespace ChatTwo_Server
             return cmdResult;
         }
 
+        /// <summary>
+        /// Returns an UserObj containing the username and the userId. Returns null if username/password is incorrect.
+        /// </summary>
+        /// <param name="name">User's username.</param>
+        /// <param name="password">Base64 hash string of the password.</param>
         static public UserObj LoginUser(string name, string password)
         {
             UserObj cmdResult = null;
@@ -526,6 +571,11 @@ namespace ChatTwo_Server
             return cmdResult;
         }
 
+        /// <summary>
+        /// Updates a user's online status and socket in the database. Using the StatusUpdate stored procedure.
+        /// </summary>
+        /// <param name="id">User's ID.</param>
+        /// <param name="socket">The IPEndPoint to be written to the database.</param>
         static public bool UpdateUser(int id, IPEndPoint socket)
         {
             int cmdResult = 0;
@@ -554,9 +604,13 @@ namespace ChatTwo_Server
                     Close();
                 }
             }
-            return (cmdResult != 0);
+            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
 
+        /// <summary>
+        /// Checks for all the users that haven't reported in for more than 10 seconds. Using the StatusIntervalUpdate stored procedure.
+        /// </summary>
+        /// <param name="connString">The connection string is needed here because a separate MySqlConnetion is started for this.</param>
         static public void StatusIntervalUpdate(string connString) // Threaded looping method.
         {
             using (MySqlConnection intervalConn = new MySqlConnection(connString))
@@ -597,9 +651,16 @@ namespace ChatTwo_Server
             }
         }
 
-        // Should make a stored procedure that return only mutual contacts that are online. Would make this faster!
+        /// <summary>
+        /// When a user changes status. For example coming online or going offline.
+        /// This will find all online mutual contacts and fire an OnUserStatusChange for each.
+        /// </summary>
+        /// <param name="userId">ID number of the user changing status.</param>
+        /// <param name="comesOnline">Set true if they are coming online, or false if they are going offline.</param>
         private static void UserStatusChanged(int userId, bool comesOnline) // Threaded method.
         {
+            // Should make the ContactsMutual stored procedure only return contacts that are online.
+            // Would make this method faster by only having it make one query. Just not sure how.
             List<int> contactIds = new List<int>();
             using (MySqlCommand cmd = new MySqlCommand("ContactsMutual", _conn))
             {
@@ -628,6 +689,7 @@ namespace ChatTwo_Server
             }
             if (contactIds.Count != 0)
             {
+                // This is all created in the method, so no chance of SQL injection.
                 string users = String.Join(" OR `ID` = ", contactIds);
                 contactIds.Clear();
                 using (MySqlCommand cmd = new MySqlCommand("SELECT `ID` FROM `Users` WHERE `Online` = 1 AND (`ID` = " + users + ");", _conn))
@@ -648,6 +710,7 @@ namespace ChatTwo_Server
                         Close();
                     }
                 }
+                // And finally we have a list of all the contacts that are online and we can message them.
                 foreach (int contactId in contactIds)
                 {
                     // Fire an OnUserStatusChange event.
