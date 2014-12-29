@@ -74,7 +74,7 @@ namespace ChatTwo_Server
             // This also makes the threaded method stop gracefully.
             _online = false;
 
-            // Stop the thread.
+            // Waits for the thread to end gracefully.
             if (_threadStatusIntervalUpdate != null)
                 _threadStatusIntervalUpdate.Join();
 
@@ -393,7 +393,7 @@ namespace ChatTwo_Server
                     }
                 }
             }
-            return (cmdResult != 0);
+            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
 
         /// <summary>
@@ -460,7 +460,7 @@ namespace ChatTwo_Server
                         break;
                 }
             }
-            return (cmdResult != 0);
+            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
         #endregion
 
