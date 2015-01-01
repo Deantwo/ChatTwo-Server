@@ -100,8 +100,10 @@ namespace ChatTwo_Server
                         btnSqlCreate.Enabled = true;
                         break;
                     case DatabaseCommunication.ConnectionTestResult.MissingTable:
-                        errorMessage = "";
-                        errorTip = "";
+                        errorMessage = "One or more of the tables do not exist";
+                        errorTip = "." + Environment.NewLine + Environment.NewLine +
+                            "You can create/repair the database by clicking the button below.";
+                        btnSqlCreate.Enabled = true;
                         break;
                     case DatabaseCommunication.ConnectionTestResult.OutDated:
                         errorMessage = "SQL database need to be updated";
