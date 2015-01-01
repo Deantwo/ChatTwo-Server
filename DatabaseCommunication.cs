@@ -256,7 +256,7 @@ namespace ChatTwo_Server
                     "CREATE TABLE `Users` (" + Environment.NewLine +
                     "    `ID` INT NOT NULL PRIMARY KEY AUTO_INCREMENT," + Environment.NewLine +
                     "    `Name` VARCHAR(30) NOT NULL UNIQUE," + Environment.NewLine +
-                    "    `Password` VARCHAR(26) NOT NULL," + Environment.NewLine +
+                    "    `Password` VARCHAR(28) NOT NULL," + Environment.NewLine +
                     "    `Online` TINYINT(1) NOT NULL DEFAULT 0," + Environment.NewLine +
                     "    `Socket` VARCHAR(51) NULL," + Environment.NewLine +
                     "    `LastOnline` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," + Environment.NewLine +
