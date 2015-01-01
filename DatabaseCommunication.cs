@@ -466,7 +466,7 @@ namespace ChatTwo_Server
         /// Create a user on the `Users` table. Username is a unique column and this medthod will return false if it is already in use.
         /// </summary>
         /// <param name="username">Username of the user to create.</param>
-        /// <param name="password">26 base64 character hash string of the user's password.</param>
+        /// <param name="password">28 base64 character hash string of the user's password.</param>
         public static bool CreateUser(string username, string password)
         {
             int cmdResult = 0;
