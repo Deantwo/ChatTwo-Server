@@ -620,51 +620,59 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(8, 6);
+            this.button1.Location = new System.Drawing.Point(229, 17);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 9;
+            this.button1.TabIndex = 11;
             this.button1.Text = "CreateUser";
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.CreateUser_Click);
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(89, 8);
+            this.textBox1.Location = new System.Drawing.Point(17, 19);
             this.textBox1.Name = "textBox1";
             this.textBox1.Size = new System.Drawing.Size(100, 20);
-            this.textBox1.TabIndex = 10;
+            this.textBox1.TabIndex = 9;
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(8, 64);
+            this.button3.Location = new System.Drawing.Point(229, 61);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(75, 23);
             this.button3.TabIndex = 14;
             this.button3.Text = "StatusUpdate";
             this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.StatusUpdate_Click);
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(8, 35);
+            this.button2.Location = new System.Drawing.Point(148, 61);
             this.button2.Name = "button2";
             this.button2.Size = new System.Drawing.Size(75, 23);
-            this.button2.TabIndex = 11;
+            this.button2.TabIndex = 13;
             this.button2.Text = "ReadUser";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.ReadUser_Click);
             // 
             // numericUpDown1
             // 
-            this.numericUpDown1.Location = new System.Drawing.Point(89, 49);
+            this.numericUpDown1.Location = new System.Drawing.Point(90, 64);
             this.numericUpDown1.Name = "numericUpDown1";
             this.numericUpDown1.Size = new System.Drawing.Size(52, 20);
-            this.numericUpDown1.TabIndex = 13;
+            this.numericUpDown1.TabIndex = 12;
+            this.numericUpDown1.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
             // 
             // textBox2
             // 
-            this.textBox2.Location = new System.Drawing.Point(195, 8);
+            this.textBox2.Location = new System.Drawing.Point(123, 19);
             this.textBox2.Name = "textBox2";
             this.textBox2.Size = new System.Drawing.Size(100, 20);
-            this.textBox2.TabIndex = 12;
+            this.textBox2.TabIndex = 10;
             // 
             // timer1
             // 

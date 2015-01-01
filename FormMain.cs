@@ -363,7 +363,9 @@ namespace ChatTwo_Server
             string hashedPassword = ByteHelper.GetHashString(Encoding.Unicode.GetBytes(textBox2.Text));
             bool worked = DatabaseCommunication.CreateUser(textBox1.Text, hashedPassword);
             if (worked)
-                WriteLog("User created: " + textBox1.Text, Color.Blue.ToArgb());
+                WriteLog("user[\"" + textBox1.Text + "\"] Was created successfully.", Color.Blue.ToArgb());
+            else
+                WriteLog("user[\"" + textBox1.Text + "\"] Was not created.", Color.Red.ToArgb());
         }
 
         private void ReadUser_Click(object sender, EventArgs e)
@@ -371,13 +373,17 @@ namespace ChatTwo_Server
             UserObj user = DatabaseCommunication.ReadUser((int)numericUpDown1.Value);
             if (user != null)
                 WriteLog(user.ToString(), Color.Purple.ToArgb());
+            else
+                WriteLog("user[" + (int)numericUpDown1.Value + "] Does not exist.", Color.Red.ToArgb());
         }
 
         private void StatusUpdate_Click(object sender, EventArgs e)
         {
             bool worked = DatabaseCommunication.UpdateUser((int)numericUpDown1.Value, new System.Net.IPEndPoint(new System.Net.IPAddress(new byte[] { 10, 0, 0, 1} ), 9020));
             if (worked)
-                WriteLog("Updated user: " + (int)numericUpDown1.Value, Color.Blue.ToArgb());
+                WriteLog("user[" + (int)numericUpDown1.Value + "] Changed to online.", Color.Blue.ToArgb());
+            else
+                WriteLog("user[" + (int)numericUpDown1.Value + "] Does not exist.", Color.Red.ToArgb());
         }
         #endregion
 
