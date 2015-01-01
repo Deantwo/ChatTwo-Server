@@ -243,17 +243,14 @@ namespace ChatTwo_Server
                     "CREATE DATABASE IF NOT EXISTS `ChatTwo`;" + Environment.NewLine +
                     "USE `ChatTwo`;" + Environment.NewLine +
                     "" + Environment.NewLine +
-                    "DROP TABLE IF EXISTS `ServerStatus`;" + Environment.NewLine +
-                    "CREATE TABLE `ServerStatus` (" + Environment.NewLine +
+                    "CREATE TABLE IF NOT EXISTS `ServerStatus` (" + Environment.NewLine +
                     "    `Version` INT NOT NULL," + Environment.NewLine +
                     "    `CreationDate` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," + Environment.NewLine +
                     "    `LastUpdated` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" + Environment.NewLine +
                     "    );" + Environment.NewLine +
                     "INSERT INTO `ServerStatus` (`Version`) VALUES(0);" + Environment.NewLine +
                     "" + Environment.NewLine +
-                    "DROP TABLE IF EXISTS `Users`;" + Environment.NewLine +
-                    "DROP TABLE IF EXISTS `Contacts`;" + Environment.NewLine +
-                    "CREATE TABLE `Users` (" + Environment.NewLine +
+                    "CREATE TABLE IF NOT EXISTS `Users` (" + Environment.NewLine +
                     "    `ID` INT NOT NULL PRIMARY KEY AUTO_INCREMENT," + Environment.NewLine +
                     "    `Name` VARCHAR(30) NOT NULL UNIQUE," + Environment.NewLine +
                     "    `Password` VARCHAR(28) NOT NULL," + Environment.NewLine +
@@ -262,7 +259,7 @@ namespace ChatTwo_Server
                     "    `LastOnline` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," + Environment.NewLine +
                     "    `Registered` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" + Environment.NewLine +
                     "    );" + Environment.NewLine +
-                    "CREATE TABLE `Contacts` (" + Environment.NewLine +
+                    "CREATE TABLE IF NOT EXISTS `Contacts` (" + Environment.NewLine +
                     "    `ID_1` INT NOT NULL," + Environment.NewLine +
                     "    `ID_2` INT NOT NULL," + Environment.NewLine +
                     "    `1To2` TINYINT(1) NOT NULL DEFAULT 0," + Environment.NewLine +
