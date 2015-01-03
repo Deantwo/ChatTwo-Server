@@ -16,6 +16,8 @@ namespace ChatTwo_Server
             set { _users = value; }
         }
 
+        private static Dictionary<IPEndPoint, string> _tempUsers = new Dictionary<IPEndPoint, string>();
+
         public static void MessageReceivedHandler(object sender, PacketReceivedEventArgs args)
         {
             if (!DatabaseCommunication.Active)
@@ -79,12 +81,14 @@ namespace ChatTwo_Server
                                 if (user == null)
                                 {
                                     // Have to send back a LoginReply message here with a "wrong username/password" error.
+                                    _tempUsers.Add(message.Ip, sharedSecret);
                                     MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.LoginReply, new byte[] { 0x01 });
                                     return;
                                 }
                                 if (_users.Any(x => x.ID == user.ID))
                                 {
                                     // Have to send back a LoginReply message here with a "User is already online" error.
+                                    _tempUsers.Add(message.Ip, sharedSecret);
                                     MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.LoginReply, new byte[] { 0x02 });
                                     return;
                                 }
@@ -154,10 +158,10 @@ namespace ChatTwo_Server
             }
             else if (message.Type == ChatTwo_Protocol.MessageType.LoginReply && message.To == 0)
             {
-                // !? This will only happen if the login attempt failed.
-                // But because the login attempt failed, I don't save a UserObj object in the _users list, which in turn mean I don't have a sharedSecret saved!
-                //sharedSecret = 
-                throw new NotImplementedException("Login attempt failed." + Environment.NewLine + "But because the login attempt failed, I don't save a UserObj object in the _users list, which in turn mean I don't have a sharedSecret saved!");
+                // Not sure I like the idea of having "_tempUser", but it works for now I guess?
+                // It could cause problems if multiple login attempts are made from the same client in rapid succession.
+                sharedSecret = _tempUsers[message.Ip];
+                _tempUsers.Remove(message.Ip);
             }
             else
             {
