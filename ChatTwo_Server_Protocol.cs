@@ -112,13 +112,17 @@ namespace ChatTwo_Server
                             }
                     }
                 }
+#if DEBUG
                 else
                     throw new NotImplementedException("Could not validate the MAC of the received message.");
                     // Need to add a simple debug message here, but this works as a great breakpoint until then.
+#endif
             }
+#if DEBUG
             else
                 throw new NotImplementedException("Could not validate the signature of the received message. The signature was \"0x" + args.Data[0] + "\" but only \"0x92\" is allowed.");
                 // Need to add a simple debug message here, but this works as a great breakpoint until then.
+#endif
         }
 
         public static void MessageToIp(IPEndPoint toIp, ChatTwo_Protocol.MessageType type, byte[] data = null, string text = null)
