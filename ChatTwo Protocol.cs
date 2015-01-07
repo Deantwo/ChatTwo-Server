@@ -25,6 +25,7 @@ namespace ChatTwo_Server
             LoginReply, // Login attempt response.
             Status, // Tell server your online status and IP address. A form of keepalive.
             ContactRequest, // A request to make someone your contact.
+            ContactRequestReply, // ContactRequest response.
             ContactRevoke, // Remove someone from your contacts.
             ContactStatus, // Tell client the online status and IP address of a contact.
             Message, // Message to another user.

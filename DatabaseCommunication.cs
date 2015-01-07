@@ -569,6 +569,43 @@ namespace ChatTwo_Server
         }
 
         /// <summary>
+        /// Lookup a username. Returns an UserObj with the userId.
+        /// </summary>
+        /// <param name="name">Username to be looked up.</param>
+        static public UserObj LookupUser(string name)
+        {
+            UserObj cmdResult = null;
+            using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `Users` WHERE `Name` = @name;", _conn))
+            {
+                // Add parameterized parameters to prevent SQL injection.
+                cmd.Parameters.AddWithValue("@name", name);
+
+                try
+                {
+                    Open();
+                    // Execute SQL command.
+                    MySqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        cmdResult = new UserObj();
+                        cmdResult.ID = (int)reader["ID"];
+                        //cmdResult.Name = (string)reader["Name"];
+                        //cmdResult.Online = (bool)reader["Online"];
+                        //cmdResult.StringSocket(reader["Socket"].ToString());
+                        //cmdResult.LastOnline = (DateTime)reader["LastOnline"];//, _ci);
+                        //cmdResult.Registered = (DateTime)reader["Registered"];//, _ci);
+                        // Don't think I need anything other than the ID nummber here.
+                    }
+                }
+                finally
+                {
+                    Close();
+                }
+            }
+            return cmdResult;
+        }
+
+        /// <summary>
         /// Updates a user's online status and socket in the database. Using the StatusUpdate stored procedure.
         /// </summary>
         /// <param name="id">User's ID.</param>
@@ -626,8 +663,8 @@ namespace ChatTwo_Server
                         while (reader.Read())
                         {
                             int userId = (int)reader["ID"];
-                            Thread userStatusChange = new Thread(() => UserStatusChanged(userId, false));
-                            userStatusChange.Name = "UserChange Thread (UserStatusChanged method)";
+                            Thread userStatusChange = new Thread(() => ChatTwo_Server_Protocol.UserDisconnect(userId));
+                            userStatusChange.Name = "UserTimeout Thread (ChatTwo_Server_Protocol.UserDisconnect method)";
                             userStatusChange.Start();
                         }
                         intervalConn.Close();
@@ -647,14 +684,14 @@ namespace ChatTwo_Server
                 }
             }
         }
+        #endregion
 
+        #region Contact related
         /// <summary>
-        /// When a user changes status. For example coming online or going offline.
-        /// This will find all online mutual contacts and fire an OnUserStatusChange for each.
+        /// Returns a list of all online contacts of the user.
         /// </summary>
-        /// <param name="userId">ID number of the user changing status.</param>
-        /// <param name="comesOnline">Set true if they are coming online, or false if they are going offline.</param>
-        private static void UserStatusChanged(int userId, bool comesOnline) // Threaded method.
+        /// <param name="userId">ID number of the user.</param>
+        public static List<int> GetOnlineContacts(int userId)
         {
             // Should make the ContactsMutual stored procedure only return contacts that are online.
             // Would make this method faster by only having it make one query. Just not sure how.
@@ -708,35 +745,48 @@ namespace ChatTwo_Server
                     }
                 }
                 // And finally we have a list of all the contacts that are online and we can message them.
-                foreach (int contactId in contactIds)
+                return contactIds;
+            }
+            else
+                return new List<int>();
+        }
+
+        
+        /// <summary>
+        /// Adds a relationship from userId to contactId.
+        /// </summary>
+        /// <param name="userId">ID number of the user.</param>
+        /// <param name="contactId">ID number of the user.</param>
+        public static bool AddContact(int userId, int contactId)
+        {
+            int cmdResult = 0;
+            using (MySqlCommand cmd = new MySqlCommand("ContactsAdd", _conn))
+            {
+                //Set up cmd to reference stored procedure 'StatusUpdate'.
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                //Create input parameter (p_ID) and assign a value (userId)
+                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                idParam.Direction = System.Data.ParameterDirection.Input;
+                cmd.Parameters.Add(idParam);
+                //Create input parameter (p_ContactID) and assign a value (contactId)
+                MySqlParameter socketParam = new MySqlParameter("@p_ContactID", contactId);
+                socketParam.Direction = System.Data.ParameterDirection.Input;
+                cmd.Parameters.Add(socketParam);
+
+                try
                 {
-                    // Fire an OnUserStatusChange event.
-                    UserStatusChangeEventArgs args = new UserStatusChangeEventArgs();
-                    args.TellId = contactId;
-                    args.IdIs = userId;
-                    args.Online = comesOnline;
-                    OnUserStatusChange(args);
+                    Open();
+                    // Execute SQL command.
+                    cmdResult = cmd.ExecuteNonQuery();
+                }
+                finally
+                {
+                    Close();
                 }
             }
+            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
         #endregion
-
-        private static void OnUserStatusChange(UserStatusChangeEventArgs e)
-        {
-            EventHandler<UserStatusChangeEventArgs> handler = UserStatusChange;
-            if (handler != null)
-            {
-                handler(null, e);
-            }
-        }
-        public static event EventHandler<UserStatusChangeEventArgs> UserStatusChange;
-    }
-
-    public class UserStatusChangeEventArgs : EventArgs
-    {
-        public int TellId { get; set; }
-        public int IdIs { get; set; }
-        public bool Online { get; set; }
-        public IPEndPoint Socket { get; set; }
     }
 }

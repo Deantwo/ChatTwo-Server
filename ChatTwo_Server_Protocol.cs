@@ -97,17 +97,50 @@ namespace ChatTwo_Server
                                 _users.Add(user);
                                 MessageToUser(user.ID, ChatTwo_Protocol.MessageType.LoginReply, ByteHelper.ConcatinateArray(new byte[] { 0x00 }, BitConverter.GetBytes(user.ID)), user.Name);
                                 DatabaseCommunication.UpdateUser(user.ID, user.Socket);
+                                TellContactsAboutUserStatusChange(user.ID, true);
                                 break;
                             }
                         case ChatTwo_Protocol.MessageType.Status:
                             {
                                 UserObj user = _users.Find(x => x.ID == message.From);
-                                if (user.Socket != message.Ip)
+                                if (user != null) // If the user is not found, don't do anything. (Can this happen?)
                                 {
-                                    // Message all contacts of the user with the new IP change!!!
-                                    user.Socket = message.Ip;
+                                    if (user.Socket != message.Ip)
+                                    {
+                                        user.Socket = message.Ip;
+                                        // Message all contacts of the user with the new IP change.
+                                        TellContactsAboutUserStatusChange(user.ID, true);
+                                    }
+                                    DatabaseCommunication.UpdateUser(user.ID, user.Socket);
                                 }
+                                break;
+                            }
+                        case ChatTwo_Protocol.MessageType.ContactRequest:
+                            {
+                                string username = Encoding.Unicode.GetString(message.Data);
+                                UserObj user = DatabaseCommunication.LookupUser(username);
+                                if (user == null)
+                                {
+                                    // Have to send back a ContactRequestReply message here with a "No user with that name" error.
+                                    MessageToUser(message.From, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x01 });
+                                    return;
+                                }
+                                if (user.ID == message.From)
+                                {
+                                    // Have to send back a ContactRequestReply message here with a "You can't add your self" error.
+                                    MessageToUser(message.From, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x02 });
+                                    return;
+                                }
+                                bool added = DatabaseCommunication.AddContact(message.From, user.ID);
+                                if (added)
+                                {
+                                    // Have to send back a ContactRequestReply message here with a "User is already a contact" error.
+                                    MessageToUser(message.From, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x03 });
+                                    return;
+                                }
+                                MessageToUser(user.ID, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x00 });
                                 DatabaseCommunication.UpdateUser(user.ID, user.Socket);
+                                TellContactsAboutUserStatusChange(user.ID, true);
                                 break;
                             }
                     }
@@ -183,24 +216,38 @@ namespace ChatTwo_Server
             OnMessageTransmission(args);
         }
 
-        public static void TellUserAboutContactstatusChange(object sender, UserStatusChangeEventArgs args)
+        //public static void UserConnect(int userId)
+        //{
+        //    TellContactsAboutUserStatusChange(userId, true);
+        //}
+
+        public static void UserDisconnect(int userId)
         {
-            byte[] dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(args.IdIs), new byte[] { Convert.ToByte(args.Online) });
-            if (args.Online)
+            _users.RemoveAll(x => x.ID == userId);
+            TellContactsAboutUserStatusChange(userId, false);
+        }
+
+        public static void TellContactsAboutUserStatusChange(int userId, bool online)
+        {
+            List<int> contacts = DatabaseCommunication.GetOnlineContacts(userId);
+            if (contacts.Count != 0) // if the user has no online contacts, there is no need to do the rest.
             {
-                IPEndPoint socket;
-                if (args.Socket != null)
-                    socket = args.Socket;
-                else if (_users.Any(x => x.ID == args.IdIs))
-                    socket = _users.Find(x => x.ID == args.IdIs).Socket;
-                else
-                    // This shouldn't really happen. I should make the server simply manage online status and sockets only in the memory, and not in the database.
-                    throw new NotImplementedException("Could not find a socket for the user[" + args.IdIs + "].");
-                // 0x01 for UDP only.
-                byte[] socketBytes = ByteHelper.ConcatinateArray(new byte[] {0x01}, BitConverter.GetBytes(args.Socket.Port), args.Socket.Address.GetAddressBytes());
-                dataBytes = ByteHelper.ConcatinateArray(dataBytes, socketBytes);
+                byte[] dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(userId), new byte[] { Convert.ToByte(online) });
+                if (online)
+                {
+                    IPEndPoint socket;
+                    if (_users.Any(x => x.ID == userId))
+                        socket = _users.Find(x => x.ID == userId).Socket;
+                    else
+                        // This shouldn't really happen. I should make the server simply manage online status and sockets only in the memory, and not in the database.
+                        throw new NotImplementedException("Could not find a socket for the user[" + userId + "].");
+                    // 0x01 for UDP only.
+                    byte[] socketBytes = ByteHelper.ConcatinateArray(new byte[] { 0x01 }, BitConverter.GetBytes(socket.Port), socket.Address.GetAddressBytes());
+                    dataBytes = ByteHelper.ConcatinateArray(dataBytes, socketBytes);
+                }
+                foreach (int contactId in contacts)
+                    MessageToUser(contactId, ChatTwo_Protocol.MessageType.ContactStatus, dataBytes);
             }
-            MessageToUser(args.TellId, ChatTwo_Protocol.MessageType.ContactStatus, dataBytes);
         }
 
         private static void OnMessageTransmission(PacketTransmissionEventArgs e)

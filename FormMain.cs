@@ -27,7 +27,6 @@ namespace ChatTwo_Server
             _server = new UdpCommunication();
             _server.PacketReceived += ChatTwo_Server_Protocol.MessageReceivedHandler;
             ChatTwo_Server_Protocol.MessageTransmission += _server.SendPacket;
-            DatabaseCommunication.UserStatusChange += ChatTwo_Server_Protocol.TellUserAboutContactstatusChange;
             _server.EtherConnectionReply += EtherConnectReply;
 
             notifyIcon1.BalloonTipTitle = this.Text;
