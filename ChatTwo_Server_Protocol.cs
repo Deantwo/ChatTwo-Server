@@ -68,18 +68,17 @@ namespace ChatTwo_Server
                                 {
                                     // Username is too short or too long.
                                     MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.CreateUserReply, new byte[] { 0x02 });
+                                    return;
                                 }
                                 bool worked = DatabaseCommunication.CreateUser(username, passwordHash);
                                 if (worked)
                                 {
-                                    // Uesr creation worked!
-                                    MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.CreateUserReply, new byte[] { 0x00 });
-                                }
-                                else
-                                {
                                     // Some error prevented the user from being created. Best guess is that a user with that name already exist.
                                     MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.CreateUserReply, new byte[] { 0x01 });
+                                    return;
                                 }
+                                // Uesr creation was successful!
+                                MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.CreateUserReply, new byte[] { 0x00 });
                                 break;
                             }
                         case ChatTwo_Protocol.MessageType.Login:
@@ -114,7 +113,7 @@ namespace ChatTwo_Server
                                 UserObj user = _users.Find(x => x.ID == message.From);
                                 if (user != null) // If the user is not found, don't do anything. (Can this happen?)
                                 {
-                                    if (user.Socket != message.Ip)
+                                    if (!IPEndPoint.Equals(user.Socket, message.Ip))
                                     {
                                         user.Socket = message.Ip;
                                         // Message all contacts of the user with the new IP change.
@@ -141,15 +140,15 @@ namespace ChatTwo_Server
                                     return;
                                 }
                                 bool added = DatabaseCommunication.AddContact(message.From, user.ID);
-                                if (added)
+                                if (!added)
                                 {
                                     // Have to send back a ContactRequestReply message here with a "User is already a contact" error.
                                     MessageToUser(message.From, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x03 });
                                     return;
                                 }
-                                MessageToUser(user.ID, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x00 });
-                                DatabaseCommunication.UpdateUser(user.ID, user.Socket);
-                                TellContactsAboutUserStatusChange(user.ID, true);
+                                MessageToUser(message.From, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x00 });
+                                //if (_users.Any(x => x.ID == user.ID))
+                                //    TellContactsAboutUserStatusChange(user.ID, true); // Need to figure this out.
                                 break;
                             }
                     }

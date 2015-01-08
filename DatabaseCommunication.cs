@@ -349,17 +349,18 @@ namespace ChatTwo_Server
                     "    MODIFIES SQL DATA" + Environment.NewLine +
                     "BEGIN" + Environment.NewLine +
                     "    IF (SELECT EXISTS(SELECT 1 FROM `Contacts`" + Environment.NewLine +
-                    "        WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
-                    "           OR (`ID_2` = p_ID AND `ID_1` = p_ContactID) LIMIT 1) as contactFound) = 1" + Environment.NewLine +
+                    "            WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
+                    "               OR (`ID_2` = p_ID AND `ID_1` = p_ContactID) LIMIT 1) as contactFound) = 1" + Environment.NewLine +
                     "    THEN" + Environment.NewLine +
                     "        UPDATE `contacts`" + Environment.NewLine +
-                    "        SET `2To1` = IF(`ID_2` = p_ID, 1, `2To1`), `1To2` = IF(`ID_1` = p_ID, 1, `1To2`)" + Environment.NewLine +
-                    "        WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
-                    "           OR (`ID_2` = p_ID AND `ID_1` = p_ContactID);" + Environment.NewLine +
+                    "            SET `2To1` = IF(`ID_2` = p_ID, 1, `2To1`), `1To2` = IF(`ID_1` = p_ID, 1, `1To2`)" + Environment.NewLine +
+                    "            WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
+                    "               OR (`ID_2` = p_ID AND `ID_1` = p_ContactID);" + Environment.NewLine +
                     "    ELSE" + Environment.NewLine +
                     "        INSERT INTO `contacts`(`ID_1`, `ID_2`, `1To2`, `2To1`)" + Environment.NewLine +
-                    "        VALUES (p_ID, p_ContactID, 1, 0);" + Environment.NewLine +
+                    "            VALUES (p_ID, p_ContactID, 1, 0);" + Environment.NewLine +
                     "    END IF;" + Environment.NewLine +
+                    "    SELECT ROW_COUNT();" + Environment.NewLine +
                     "END;" + Environment.NewLine +
                     "" + Environment.NewLine +
                     "CREATE DEFINER=CURRENT_USER PROCEDURE `ContactsRemove`(" + Environment.NewLine +
@@ -369,11 +370,11 @@ namespace ChatTwo_Server
                     "    MODIFIES SQL DATA" + Environment.NewLine +
                     "BEGIN" + Environment.NewLine +
                     "    UPDATE `contacts`" + Environment.NewLine +
-                    "    SET `2To1` = IF(`ID_2` = p_ID, 0, `2To1`), `1To2` = IF(`ID_1` = p_ID, 0, `1To2`)" + Environment.NewLine +
-                    "    WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
-                    "       OR (`ID_2` = p_ID AND `ID_1` = p_ContactID);" + Environment.NewLine +
+                    "        SET `2To1` = IF(`ID_2` = p_ID, 0, `2To1`), `1To2` = IF(`ID_1` = p_ID, 0, `1To2`)" + Environment.NewLine +
+                    "        WHERE (`ID_1` = p_ID AND `ID_2` = p_ContactID)" + Environment.NewLine +
+                    "           OR (`ID_2` = p_ID AND `ID_1` = p_ContactID);" + Environment.NewLine +
                     "    DELETE FROM `contacts`" + Environment.NewLine +
-                    "    WHERE `1To2` = 0 AND `2To1` = 0;" + Environment.NewLine +
+                    "        WHERE `1To2` = 0 AND `2To1` = 0;" + Environment.NewLine +
                     "END;"
                     , tempConn))
                 {
