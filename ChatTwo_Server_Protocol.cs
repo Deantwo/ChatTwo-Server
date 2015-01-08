@@ -34,6 +34,8 @@ namespace ChatTwo_Server
                 string sharedSecret;
                 // Position of the Type byte is 30 (SignatureByteLength + MacByteLength + TimezByteLength + UserIdByteLength).
                 ChatTwo_Protocol.MessageType type = (ChatTwo_Protocol.MessageType)args.Data[ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4 + 4];
+                // Position of the UserID bytes is 26 (SignatureByteLength + MacByteLength + TimezByteLength) with a length of 4.
+                int userId = ByteHelper.ToInt32(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4);
                 if (type == ChatTwo_Protocol.MessageType.CreateUser)
                 {
                     sharedSecret = ChatTwo_Protocol.DefaultSharedSecret;
@@ -48,8 +50,8 @@ namespace ChatTwo_Server
                 }
                 else
                 {
-                    // Position of the UserID bytes is 26 (SignatureByteLength + MacByteLength + TimezByteLength) with a length of 4.
-                    int userId = ByteHelper.ToInt32(args.Data, ChatTwo_Protocol.SignatureByteLength + ByteHelper.HashByteLength + 4);
+                    if (!_users.Any(x => x.ID == userId))
+                        return; // This is mostly to prevent clients with a connection to a previces server instants from crashing the server. Need to fix this.
                     sharedSecret = _users.Find(x => x.ID == userId).Secret;
                 }
 
@@ -148,7 +150,7 @@ namespace ChatTwo_Server
                                 }
                                 MessageToUser(message.From, ChatTwo_Protocol.MessageType.ContactRequestReply, new byte[] { 0x00 });
                                 //if (_users.Any(x => x.ID == user.ID))
-                                //    TellContactsAboutUserStatusChange(user.ID, true); // Need to figure this out.
+                                //    TellContactsAboutUserStatusChange(message.From, true); // Need to figure this out.
                                 break;
                             }
                     }
