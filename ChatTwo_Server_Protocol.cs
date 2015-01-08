@@ -20,10 +20,14 @@ namespace ChatTwo_Server
 
         public static void MessageReceivedHandler(object sender, PacketReceivedEventArgs args)
         {
-            if (!DatabaseCommunication.Active)
+            if (!DatabaseCommunication.Active)       
+#if DEBUG
                 throw new NotImplementedException("Database connection was not active and a reply for this have not been implemented yet.");
                 // Need to add a simple debug message here, but this works as a great breakpoint until then.
                 // Also need to make some kind of error message I can send back to the client.
+#else
+                return;
+#endif
 
             if (args.Data[0] == 0x92 )
             {
@@ -60,6 +64,11 @@ namespace ChatTwo_Server
                             {
                                 string passwordHash = Convert.ToBase64String(message.Data, 0, ByteHelper.HashByteLength);
                                 string username = Encoding.Unicode.GetString(ByteHelper.SubArray(message.Data, ByteHelper.HashByteLength));
+                                if (username.Length < 1 || username.Length > 30)
+                                {
+                                    // Username is too short or too long.
+                                    MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.CreateUserReply, new byte[] { 0x02 });
+                                }
                                 bool worked = DatabaseCommunication.CreateUser(username, passwordHash);
                                 if (worked)
                                 {
