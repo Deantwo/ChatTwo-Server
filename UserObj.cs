@@ -41,7 +41,7 @@ namespace ChatTwo_Server
 
         // Handles IPv4 and IPv6 notation.
         // http://stackoverflow.com/questions/2727609/best-way-to-create-ipendpoint-from-string
-        private IPEndPoint CreateIPEndPoint(string endPoint)
+        protected IPEndPoint CreateIPEndPoint(string endPoint)
         {
             string[] ep = endPoint.Split(':');
             if (ep.Length < 2) throw new FormatException("Invalid endpoint format");

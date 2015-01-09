@@ -181,11 +181,50 @@ namespace ChatTwo_Server
         /// Returns true if flag is in bitCode.
         /// ((bitCode AND flag) == flag)
         /// </summary>
-        /// <param name="bitCode">Byte or int32 used for bit flags.</param>
+        /// <param name="bitCode">Byte or int32 used as bitCode.</param>
         /// <param name="flag">Flag to check for.</param>
-        static public bool FlagCheck(int bitCode, int flag)
+        static public bool CheckBitCode(int bitCode, int flag)
         {
             return ((bitCode & flag) == flag);
+        }
+
+        /// <summary>
+        /// Returns true if index is set in bitCode.
+        /// ((bitCode AND 2^index) == 2^index)
+        /// </summary>
+        /// <param name="bitCode">Byte or int32 used as bitCode.</param>
+        /// <param name="index">Index to check.</param>
+        static public bool CheckBitCodeIndex(int bitCode, int index)
+        {
+            index = (int)Math.Pow(2, index);
+            return ((bitCode & index) == index);
+        }
+
+        /// <summary>
+        /// Returns byte with the chosen flags.
+        /// 0b(flag7, flag6, flag5, flag4, flag3, flag2, flag1, flag0)
+        /// </summary>
+        /// <param name="flag0">Flag to enter into the bitBode.</param>
+        static public byte CreateBitCode(bool flag0, bool flag1 = false, bool flag2 = false, bool flag3 = false, bool flag4 = false, bool flag5 = false, bool flag6 = false, bool flag7 = false)
+        {
+            byte bitCode = 0;
+            if (flag0)
+                bitCode += 1;
+            if (flag1)
+                bitCode += 2;
+            if (flag2)
+                bitCode += 4;
+            if (flag3)
+                bitCode += 8;
+            if (flag4)
+                bitCode += 16;
+            if (flag5)
+                bitCode += 32;
+            if (flag6)
+                bitCode += 64;
+            if (flag7)
+                bitCode += 128;
+            return bitCode;
         }
 
         /// <summary>
