@@ -421,7 +421,7 @@ namespace ChatTwo_Server
                 {
                     try
                     {
-                        Open();
+                        tempConn.Open();
                         // Execute SQL command.
                         MySqlDataReader reader = cmd.ExecuteReader();
                         if (reader.Read())
@@ -431,7 +431,7 @@ namespace ChatTwo_Server
                     }
                     finally
                     {
-                        Close();
+                        tempConn.Close();
                     }
                 }
 
@@ -752,12 +752,11 @@ namespace ChatTwo_Server
                 return new List<int>();
         }
 
-        
         /// <summary>
         /// Adds a relationship from userId to contactId.
         /// </summary>
         /// <param name="userId">ID number of the user.</param>
-        /// <param name="contactId">ID number of the user.</param>
+        /// <param name="contactId">ID number of the contact.</param>
         public static bool AddContact(int userId, int contactId)
         {
             int cmdResult = 0;
@@ -779,7 +778,70 @@ namespace ChatTwo_Server
                 {
                     Open();
                     // Execute SQL command.
-                    cmdResult = cmd.ExecuteNonQuery();
+
+                    MySqlDataReader test = cmd.ExecuteReader();
+                    test.Read();
+                    cmdResult = Convert.ToInt32(test["Row_Affected"]);
+                    test.Close();
+                    Global.MainWindow.WriteLog("ContactAdd ExecuteReader result: " + cmdResult.ToString());
+
+                    object test2 = cmd.ExecuteScalar();
+                    cmdResult = Convert.ToInt32(test2);
+                    Global.MainWindow.WriteLog("ContactAdd ExecuteScalar result: " + cmdResult.ToString());
+
+                    object test3 = cmd.ExecuteNonQuery();
+                    cmdResult = Convert.ToInt32(test3);
+                    Global.MainWindow.WriteLog("ContactAdd ExecuteNonQuery result: " + cmdResult.ToString());
+                }
+                finally
+                {
+                    Close();
+                }
+            }
+            return (cmdResult != 0); // cmdResult content the number of affected rows.
+        }
+
+
+        /// <summary>
+        /// Removes a relationship from userId to contactId.
+        /// </summary>
+        /// <param name="userId">ID number of the user.</param>
+        /// <param name="contactId">ID number of the contact.</param>
+        public static bool RemoveContact(int userId, int contactId)
+        {
+            int cmdResult = 0;
+            using (MySqlCommand cmd = new MySqlCommand("ContactsRemove", _conn))
+            {
+                //Set up cmd to reference stored procedure 'StatusUpdate'.
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                //Create input parameter (p_ID) and assign a value (userId)
+                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                idParam.Direction = System.Data.ParameterDirection.Input;
+                cmd.Parameters.Add(idParam);
+                //Create input parameter (p_ContactID) and assign a value (contactId)
+                MySqlParameter socketParam = new MySqlParameter("@p_ContactID", contactId);
+                socketParam.Direction = System.Data.ParameterDirection.Input;
+                cmd.Parameters.Add(socketParam);
+
+                try
+                {
+                    Open();
+                    // Execute SQL command.
+
+                    //MySqlDataReader test = cmd.ExecuteReader();
+                    //test.Read();
+                    //cmdResult = Convert.ToInt32(test["Row_Affected"]);
+                    //test.Close();
+                    //Global.MainWindow.WriteLog("ContactRemove ExecuteReader result: " + cmdResult.ToString());
+
+                    object test2 = cmd.ExecuteScalar();
+                    cmdResult = Convert.ToInt32(test2);
+                    Global.MainWindow.WriteLog("ContactRemove ExecuteScalar result: " + cmdResult.ToString());
+
+                    object test3 = cmd.ExecuteNonQuery();
+                    cmdResult = Convert.ToInt32(test3);
+                    Global.MainWindow.WriteLog("ContactRemove ExecuteNonQuery result: " + cmdResult.ToString());
                 }
                 finally
                 {
