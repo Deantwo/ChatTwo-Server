@@ -104,10 +104,10 @@ namespace ChatTwo_Server
                                 }
                                 user.Secret = sharedSecret;
                                 user.Socket = message.Ip;
+                                user.Online = true;
                                 _users.Add(user);
                                 MessageToUser(user.ID, ChatTwo_Protocol.MessageType.LoginReply, ByteHelper.ConcatinateArray(new byte[] { 0x00 }, BitConverter.GetBytes(user.ID)), user.Name);
-                                DatabaseCommunication.UpdateUser(user.ID, user.Socket);
-                                TellContactsAboutUserStatusChange(user.ID, true);
+                                UserConnect(user);
                                 break;
                             }
                         case ChatTwo_Protocol.MessageType.Status:
@@ -119,7 +119,7 @@ namespace ChatTwo_Server
                                     {
                                         user.Socket = message.Ip;
                                         // Message all contacts of the user with the new IP change.
-                                        TellContactsAboutUserStatusChange(user.ID, true);
+                                        TellMutualContactsAboutUserStatusChange(user.ID);
                                     }
                                     DatabaseCommunication.UpdateUser(user.ID, user.Socket);
                                 }
@@ -226,38 +226,74 @@ namespace ChatTwo_Server
             OnMessageTransmission(args);
         }
 
-        //public static void UserConnect(int userId)
-        //{
-        //    TellContactsAboutUserStatusChange(userId, true);
-        //}
+        public static void UserConnect(UserObj user)
+        {
+            DatabaseCommunication.UpdateUser(user.ID, user.Socket);
+            TellMutualContactsAboutUserStatusChange(user.ID);
+            SendAllContacts(user.ID);
+        }
 
         public static void UserDisconnect(int userId)
         {
             _users.RemoveAll(x => x.ID == userId);
-            TellContactsAboutUserStatusChange(userId, false);
+            TellMutualContactsAboutUserStatusChange(userId);
         }
 
-        public static void TellContactsAboutUserStatusChange(int userId, bool online)
+        public static void SendAllContacts(int userId)
+        {
+            Dictionary<int, byte> contacts = DatabaseCommunication.GetAllContacts(userId);
+            foreach (KeyValuePair<int, byte> contact in contacts)
+            {
+                byte[] contactStatusMessageBytes = CreateNonMutualContactStatusMessage(contact.Key, ByteHelper.CheckBitCodeIndex(contact.Value, 0), ByteHelper.CheckBitCodeIndex(contact.Value, 1));
+                MessageToUser(userId, ChatTwo_Protocol.MessageType.ContactStatus, contactStatusMessageBytes);
+            }
+        }
+
+        public static void TellMutualContactsAboutUserStatusChange(int userId)
         {
             List<int> contacts = DatabaseCommunication.GetOnlineContacts(userId);
             if (contacts.Count != 0) // if the user has no online contacts, there is no need to do the rest.
             {
-                byte[] dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(userId), new byte[] { Convert.ToByte(online) });
-                if (online)
-                {
-                    IPEndPoint socket;
-                    if (_users.Any(x => x.ID == userId))
-                        socket = _users.Find(x => x.ID == userId).Socket;
-                    else
-                        // This shouldn't really happen. I should make the server simply manage online status and sockets only in the memory, and not in the database.
-                        throw new NotImplementedException("Could not find a socket for the user[" + userId + "].");
-                    // 0x01 for UDP only.
-                    byte[] socketBytes = ByteHelper.ConcatinateArray(new byte[] { 0x01 }, BitConverter.GetBytes(socket.Port), socket.Address.GetAddressBytes());
-                    dataBytes = ByteHelper.ConcatinateArray(dataBytes, socketBytes);
-                }
+                byte[] contactStatusMessageBytes = CreateMutualContactStatusMessage(userId);
                 foreach (int contactId in contacts)
-                    MessageToUser(contactId, ChatTwo_Protocol.MessageType.ContactStatus, dataBytes);
+                    MessageToUser(contactId, ChatTwo_Protocol.MessageType.ContactStatus, contactStatusMessageBytes);
             }
+        }
+
+        public static byte[] CreateMutualContactStatusMessage(int userId)
+        {
+            UserObj user;
+            if (_users.Any(x => x.ID == userId))
+                user = _users.Find(x => x.ID == userId);
+            else
+                user = DatabaseCommunication.ReadUser(userId);
+
+            byte[] dataBytes;
+
+            dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(user.ID), new byte[] { (byte)((user.Online ? 128 : 0) + 64 + 32 + user.Name.Length) }, Encoding.Unicode.GetBytes(user.Name));
+
+            if (user.Online)
+            {
+                byte[] socketBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(user.Socket.Port), user.Socket.Address.GetAddressBytes());
+                dataBytes = ByteHelper.ConcatinateArray(dataBytes, socketBytes);
+            }
+
+            return dataBytes;
+        }
+
+        public static byte[] CreateNonMutualContactStatusMessage(int userId, bool relationshipTo, bool relationshipFrom)
+        {
+            UserObj user;
+            if (_users.Any(x => x.ID == userId))
+                user = _users.Find(x => x.ID == userId);
+            else
+                user = DatabaseCommunication.ReadUser(userId);
+
+            byte[] dataBytes;
+
+            dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(user.ID), new byte[] { (byte)((relationshipTo ? 64 : 0) + (relationshipFrom ? 32 : 0) + user.Name.Length) }, Encoding.Unicode.GetBytes(user.Name));
+
+            return dataBytes;
         }
 
         private static void OnMessageTransmission(PacketTransmissionEventArgs e)

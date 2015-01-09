@@ -751,6 +751,42 @@ namespace ChatTwo_Server
             else
                 return new List<int>();
         }
+        /// <summary>
+        /// Returns a list of all online contacts of the user.
+        /// </summary>
+        /// <param name="userId">ID number of the user.</param>
+        public static Dictionary<int, byte> GetAllContacts(int userId)
+        {
+            // Should make the ContactsMutual stored procedure only return contacts that are online.
+            // Would make this method faster by only having it make one query. Just not sure how.
+            Dictionary<int, byte> contacts = new Dictionary<int, byte>();
+            using (MySqlCommand cmd = new MySqlCommand("ContactsAll", _conn))
+            {
+                //Set up cmd to reference stored procedure 'ContactsMutual'.
+                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                //Create input parameter (p_ID) and assign a value (id)
+                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                idParam.Direction = System.Data.ParameterDirection.Input;
+                cmd.Parameters.Add(idParam);
+
+                try
+                {
+                    Open();
+                    // Execute SQL command.
+                    MySqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        contacts.Add(Convert.ToInt32(reader["ContactID"]), ByteHelper.CreateBitCode(Convert.ToBoolean(reader["FromMe"]), Convert.ToBoolean(reader["ToMe"])));
+                    }
+                }
+                finally
+                {
+                    Close();
+                }
+            }
+            return contacts;
+        }
 
         /// <summary>
         /// Adds a relationship from userId to contactId.
