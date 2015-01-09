@@ -73,7 +73,7 @@ namespace ChatTwo_Server
                                     return;
                                 }
                                 bool worked = DatabaseCommunication.CreateUser(username, passwordHash);
-                                if (worked)
+                                if (!worked)
                                 {
                                     // Some error prevented the user from being created. Best guess is that a user with that name already exist.
                                     MessageToIp(message.Ip, ChatTwo_Protocol.MessageType.CreateUserReply, new byte[] { 0x01 });
