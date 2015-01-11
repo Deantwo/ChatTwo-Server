@@ -244,9 +244,28 @@ namespace ChatTwo_Server
             Dictionary<int, byte> contacts = DatabaseCommunication.GetAllContacts(userId);
             foreach (KeyValuePair<int, byte> contact in contacts)
             {
-                byte[] contactStatusMessageBytes = CreateNonMutualContactStatusMessage(contact.Key, ByteHelper.CheckBitCodeIndex(contact.Value, 0), ByteHelper.CheckBitCodeIndex(contact.Value, 1));
+                byte[] contactStatusMessageBytes;
+                if (contact.Value == 0x03) // 0b00000011
+                    contactStatusMessageBytes = CreateMutualContactStatusMessage(contact.Key);
+                else
+                    contactStatusMessageBytes = CreateNonMutualContactStatusMessage(contact.Key, ByteHelper.CheckBitCodeIndex(contact.Value, 0), ByteHelper.CheckBitCodeIndex(contact.Value, 1));
                 MessageToUser(userId, ChatTwo_Protocol.MessageType.ContactStatus, contactStatusMessageBytes);
             }
+        }
+
+        public static byte[] CreateNonMutualContactStatusMessage(int userId, bool relationshipTo, bool relationshipFrom)
+        {
+            UserObj user;
+            if (_users.Any(x => x.ID == userId))
+                user = _users.Find(x => x.ID == userId);
+            else
+                user = DatabaseCommunication.ReadUser(userId);
+
+            byte[] dataBytes;
+
+            dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(user.ID), new byte[] { (byte)((relationshipTo ? 64 : 0) + (relationshipFrom ? 32 : 0) + user.Name.Length) }, Encoding.Unicode.GetBytes(user.Name));
+
+            return dataBytes;
         }
 
         public static void TellMutualContactsAboutUserStatusChange(int userId)
@@ -277,21 +296,6 @@ namespace ChatTwo_Server
                 byte[] socketBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(user.Socket.Port), user.Socket.Address.GetAddressBytes());
                 dataBytes = ByteHelper.ConcatinateArray(dataBytes, socketBytes);
             }
-
-            return dataBytes;
-        }
-
-        public static byte[] CreateNonMutualContactStatusMessage(int userId, bool relationshipTo, bool relationshipFrom)
-        {
-            UserObj user;
-            if (_users.Any(x => x.ID == userId))
-                user = _users.Find(x => x.ID == userId);
-            else
-                user = DatabaseCommunication.ReadUser(userId);
-
-            byte[] dataBytes;
-
-            dataBytes = ByteHelper.ConcatinateArray(BitConverter.GetBytes(user.ID), new byte[] { (byte)((relationshipTo ? 64 : 0) + (relationshipFrom ? 32 : 0) + user.Name.Length) }, Encoding.Unicode.GetBytes(user.Name));
 
             return dataBytes;
         }

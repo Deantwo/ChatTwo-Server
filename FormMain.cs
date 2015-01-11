@@ -41,6 +41,26 @@ namespace ChatTwo_Server
             tabSqlTest.Parent = null;
         }
 
+        private void quickStartToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!DatabaseCommunication.Active)
+            {
+                btnSqlTest_Click(null, null);
+                //if (btnSqlCreate.Enabled)
+                //{
+                //    btnSqlCreate_Click(null, null);
+                //    btnSqlTest_Click(null, null);
+                //}
+                if (btnSqlConnect.Enabled)
+                    btnSqlConnect_Click(null, null);
+            }
+            if (!_server.Active)
+            {
+                if (btnIpConnect.Enabled)
+                    btnIpConnect_Click(null, null);
+            }
+        }
+
         #region Database Setup
         private void tbxSql_ConnectionStringValuesChanged(object sender, EventArgs e)
         {
@@ -114,7 +134,8 @@ namespace ChatTwo_Server
                         errorTip = ".";
                         break;
                 }
-                MessageBox.Show(errorMessage + errorTip, "SQL Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (sender != null)
+                    MessageBox.Show(errorMessage + errorTip, "SQL Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 toolStripStatusLabel1.Text = "Database connection test: failed. " + errorMessage;
                 lblSqlConnection.Text = "Test: failed";
                 lblSqlConnection.Image = _infoTip;
@@ -151,6 +172,7 @@ namespace ChatTwo_Server
             {
                 tbxSql_ConnectionStringValuesChanged(null, null);
                 toolStripStatusLabel1.Text = "SQL database created/repaired";
+                btnSqlTest_Click(null, null);
             }
             else
                 WriteLog("Could not create the database.", Color.Red.ToArgb());
@@ -163,6 +185,7 @@ namespace ChatTwo_Server
             {
                 tbxSql_ConnectionStringValuesChanged(null, null);
                 toolStripStatusLabel1.Text = "SQL database Updated";
+                btnSqlTest_Click(null, null);
             }
             else
                 WriteLog("Could not update the database.", Color.Red.ToArgb());
@@ -241,7 +264,7 @@ namespace ChatTwo_Server
                     lblIpConnection.Text = "Test: invalid IP address";
                 }
 
-                    MessageBox.Show(errorMessage + errorTip, "Port-Forward Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(errorMessage + errorTip, "Port-Forward Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 toolStripStatusLabel1.Text = "UDP port-forward test: failed. " + errorMessage;
                 lblIpConnection.Image = _infoTip;
                 toolTip1.SetToolTip(lblIpConnection, errorMessage + errorTip);
