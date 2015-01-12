@@ -74,6 +74,7 @@ namespace ChatTwo_Server
         private void btnSqlTest_Click(object sender, EventArgs e)
         {
             tbxSql_ConnectionStringValuesChanged(null, null);
+            btnSqlTest.Enabled = false;
 
             // Basic user feedback.
             toolStripStatusLabel1.Text = "Testing connection and access to the database...";
@@ -141,6 +142,8 @@ namespace ChatTwo_Server
                 lblSqlConnection.Image = _infoTip;
                 toolTip1.SetToolTip(lblSqlConnection, errorMessage + errorTip);
             }
+
+            btnSqlTest.Enabled = true;
         }
 
         private void btnSqlConnect_Click(object sender, EventArgs e)
@@ -226,6 +229,7 @@ namespace ChatTwo_Server
         private void btnIpTest_Click(object sender, EventArgs e)
         {
             tbxIp_ExternalIpValuesChanged(null, null);
+            btnIpTest.Enabled = false;
 
             if (chxIpUdp.Checked)
             {
@@ -277,6 +281,8 @@ namespace ChatTwo_Server
 
                 throw new NotImplementedException("TCP is not implemented yet.");
             }
+
+            btnIpTest.Enabled = true;
         }
 
         public void EtherConnectReply(object sender, EventArgs args)
@@ -293,6 +299,7 @@ namespace ChatTwo_Server
                     toolStripStatusLabel1.Text = "UDP port-forward test: successful";
                     lblIpConnection.Text = "Test: successful";
                     toolTip1.SetToolTip(lblIpConnection, "");
+                    btnIpTest.Enabled = true;
                 }
             }
         }
@@ -314,6 +321,7 @@ namespace ChatTwo_Server
                 toolStripStatusLabel1.Text = "UDP port-forward test: failed. " + errorMessage;
                 lblIpConnection.Image = _infoTip;
                 toolTip1.SetToolTip(lblIpConnection, errorMessage + errorTip);
+                btnIpTest.Enabled = true;
             }
         }
         #endregion
