@@ -31,10 +31,7 @@ namespace ChatTwo_Server
         //private  static CultureInfo _ci = CultureInfo.CreateSpecificCulture("en-US");
 
         // SqlConnection object is saved here for continued use.
-        private static MySqlConnection _conn;
-
-        // My attempt at making the MySqlConnection not close before all tasks are done using it.
-        private static int _SqlWorker = 0;
+        private static string _connString;
 
         /// <summary>
         /// Creates the SqlConnection object and starts threaded methods.
@@ -53,14 +50,14 @@ namespace ChatTwo_Server
             connBuilder.Add("Database", "ChatTwo");
             connBuilder.Add("Connection timeout", 5);
 
-            // Create the SqlConnection object using the saved IP address from settings.
-            _conn = new MySqlConnection(connBuilder.ConnectionString);
+            // Save the connection string to the static variable.
+            _connString = connBuilder.ConnectionString;
 
             // Set the status of the database connection to on.
             _online = true;
 
             // Start the thread.
-            _threadStatusIntervalUpdate = new Thread(() => StatusIntervalUpdate(connBuilder.ConnectionString));
+            _threadStatusIntervalUpdate = new Thread(() => StatusIntervalUpdate(_connString));
             _threadStatusIntervalUpdate.Name = "StatusIntervalUpdate Thread (StatusIntervalUpdate method)";
             _threadStatusIntervalUpdate.Start();
         }
@@ -79,27 +76,16 @@ namespace ChatTwo_Server
                 _threadStatusIntervalUpdate.Join();
 
             // Delete the SqlConnection object.
-            _conn = null;
+            _connString = null;
         }
-
+        
         /// <summary>
-        /// Opens the MySqlConnection if it's not already open.
+        /// Closes the MySqlConnection only if it is open.
         /// </summary>
-        private static void Open()
+        private static void Close(MySqlConnection conn)
         {
-            if (_SqlWorker == 0)
-                _conn.Open();
-            _SqlWorker++;
-        }
-
-        /// <summary>
-        /// Closes the MySqlConnection if all tasks are down using it.
-        /// </summary>
-        private static void Close()
-        {
-            _SqlWorker--;
-            if (_SqlWorker == 0 && _conn.State == ConnectionState.Open)
-                _conn.Close();
+            if (conn.State == ConnectionState.Open)
+                conn.Close();
         }
 
         #region Testing
@@ -470,33 +456,36 @@ namespace ChatTwo_Server
         /// <param name="password">28 base64 character hash string of the user's password.</param>
         public static bool CreateUser(string username, string password)
         {
-            int cmdResult = 0;
-            using (MySqlCommand cmd = new MySqlCommand("INSERT INTO `Users` (`Name`, `Password`) VALUES(@username, @password);", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                // Add parameterized parameters to prevent SQL injection.
-                cmd.Parameters.AddWithValue("@username", username);
-                cmd.Parameters.AddWithValue("@password", password);
+                int cmdResult = 0;
+                using (MySqlCommand cmd = new MySqlCommand("INSERT INTO `Users` (`Name`, `Password`) VALUES(@username, @password);", conn))
+                {
+                    // Add parameterized parameters to prevent SQL injection.
+                    cmd.Parameters.AddWithValue("@username", username);
+                    cmd.Parameters.AddWithValue("@password", password);
 
-                try
-                {
-                    Open();
-                    // Execute SQL command.
-                    cmdResult = cmd.ExecuteNonQuery();
+                    try
+                    {
+                        conn.Open();
+                        // Execute SQL command.
+                        cmdResult = cmd.ExecuteNonQuery();
+                    }
+                    catch (MySqlException ex)
+                    {
+                        if (ex.Number == 1062) // http://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
+                            // (ER_DUP_ENTRY) Message: Duplicate entry '%s' for key %d
+                            // If the username is already in use.
+                            return false;
+                        throw ex;
+                    }
+                    finally
+                    {
+                        Close(conn);
+                    }
                 }
-                catch (MySqlException ex)
-                {
-                    if (ex.Number == 1062) // http://dev.mysql.com/doc/refman/5.6/en/error-messages-server.html
-                        // (ER_DUP_ENTRY) Message: Duplicate entry '%s' for key %d
-                        // If the username is already in use.
-                        return false;
-                    throw ex;
-                }
-                finally
-                {
-                    Close();
-                }
+                return (cmdResult != 0); // cmdResult content the number of affected rows.
             }
-            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
 
         /// <summary>
@@ -505,34 +494,37 @@ namespace ChatTwo_Server
         /// <param name="id">ID number of the requested user.</param>
         static public UserObj ReadUser(int id)
         {
-            UserObj cmdResult = null;
-            using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `Users` WHERE `ID` = @id;", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                // Add parameterized parameters to prevent SQL injection.
-                cmd.Parameters.AddWithValue("@id", id);
-
-                try
+                UserObj cmdResult = null;
+                using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `Users` WHERE `ID` = @id;", conn))
                 {
-                    Open();
-                    // Execute SQL command.
-                    MySqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
+                    // Add parameterized parameters to prevent SQL injection.
+                    cmd.Parameters.AddWithValue("@id", id);
+
+                    try
                     {
-                        cmdResult = new UserObj();
-                        cmdResult.ID = (int)reader["ID"];
-                        cmdResult.Name = (string)reader["Name"];
-                        cmdResult.Online = (bool)reader["Online"];
-                        cmdResult.StringSocket(reader["Socket"].ToString());
-                        cmdResult.LastOnline = (DateTime)reader["LastOnline"];//, _ci);
-                        cmdResult.Registered = (DateTime)reader["Registered"];//, _ci);
+                        conn.Open();
+                        // Execute SQL command.
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            cmdResult = new UserObj();
+                            cmdResult.ID = (int)reader["ID"];
+                            cmdResult.Name = (string)reader["Name"];
+                            cmdResult.Online = (bool)reader["Online"];
+                            cmdResult.StringSocket(reader["Socket"].ToString());
+                            cmdResult.LastOnline = (DateTime)reader["LastOnline"];//, _ci);
+                            cmdResult.Registered = (DateTime)reader["Registered"];//, _ci);
+                        }
+                    }
+                    finally
+                    {
+                        Close(conn);
                     }
                 }
-                finally
-                {
-                    Close();
-                }
+                return cmdResult;
             }
-            return cmdResult;
         }
 
         /// <summary>
@@ -542,31 +534,34 @@ namespace ChatTwo_Server
         /// <param name="password">Base64 hash string of the password.</param>
         static public UserObj LoginUser(string name, string password)
         {
-            UserObj cmdResult = null;
-            using (MySqlCommand cmd = new MySqlCommand("SELECT `ID`, `Name` FROM `Users` WHERE `Name` = @name AND `Password` = @password;", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                // Add parameterized parameters to prevent SQL injection.
-                cmd.Parameters.AddWithValue("@name", name);
-                cmd.Parameters.AddWithValue("@password", password);
-
-                try
+                UserObj cmdResult = null;
+                using (MySqlCommand cmd = new MySqlCommand("SELECT `ID`, `Name` FROM `Users` WHERE `Name` = @name AND `Password` = @password;", conn))
                 {
-                    Open();
-                    // Execute SQL command.
-                    MySqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
+                    // Add parameterized parameters to prevent SQL injection.
+                    cmd.Parameters.AddWithValue("@name", name);
+                    cmd.Parameters.AddWithValue("@password", password);
+
+                    try
                     {
-                        cmdResult = new UserObj();
-                        cmdResult.ID = (int)reader["ID"];
-                        cmdResult.Name = reader["Name"].ToString();
+                        conn.Open();
+                        // Execute SQL command.
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            cmdResult = new UserObj();
+                            cmdResult.ID = (int)reader["ID"];
+                            cmdResult.Name = reader["Name"].ToString();
+                        }
+                    }
+                    finally
+                    {
+                        Close(conn);
                     }
                 }
-                finally
-                {
-                    Close();
-                }
+                return cmdResult;
             }
-            return cmdResult;
         }
 
         /// <summary>
@@ -575,35 +570,38 @@ namespace ChatTwo_Server
         /// <param name="name">Username to be looked up.</param>
         static public UserObj LookupUser(string name)
         {
-            UserObj cmdResult = null;
-            using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `Users` WHERE `Name` = @name;", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                // Add parameterized parameters to prevent SQL injection.
-                cmd.Parameters.AddWithValue("@name", name);
-
-                try
+                UserObj cmdResult = null;
+                using (MySqlCommand cmd = new MySqlCommand("SELECT * FROM `Users` WHERE `Name` = @name;", conn))
                 {
-                    Open();
-                    // Execute SQL command.
-                    MySqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
+                    // Add parameterized parameters to prevent SQL injection.
+                    cmd.Parameters.AddWithValue("@name", name);
+
+                    try
                     {
-                        cmdResult = new UserObj();
-                        cmdResult.ID = (int)reader["ID"];
-                        //cmdResult.Name = (string)reader["Name"];
-                        //cmdResult.Online = (bool)reader["Online"];
-                        //cmdResult.StringSocket(reader["Socket"].ToString());
-                        //cmdResult.LastOnline = (DateTime)reader["LastOnline"];//, _ci);
-                        //cmdResult.Registered = (DateTime)reader["Registered"];//, _ci);
-                        // Don't think I need anything other than the ID nummber here.
+                        conn.Open();
+                        // Execute SQL command.
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            cmdResult = new UserObj();
+                            cmdResult.ID = (int)reader["ID"];
+                            //cmdResult.Name = (string)reader["Name"];
+                            //cmdResult.Online = (bool)reader["Online"];
+                            //cmdResult.StringSocket(reader["Socket"].ToString());
+                            //cmdResult.LastOnline = (DateTime)reader["LastOnline"];//, _ci);
+                            //cmdResult.Registered = (DateTime)reader["Registered"];//, _ci);
+                            // Don't think I need anything other than the ID nummber here.
+                        }
+                    }
+                    finally
+                    {
+                        Close(conn);
                     }
                 }
-                finally
-                {
-                    Close();
-                }
+                return cmdResult;
             }
-            return cmdResult;
         }
 
         /// <summary>
@@ -613,33 +611,36 @@ namespace ChatTwo_Server
         /// <param name="socket">The IPEndPoint to be written to the database.</param>
         static public bool UpdateUser(int id, IPEndPoint socket)
         {
-            int cmdResult = 0;
-            using (MySqlCommand cmd = new MySqlCommand("StatusUpdate", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                //Set up cmd to reference stored procedure 'StatusUpdate'.
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
-
-                //Create input parameter (p_ID) and assign a value (id)
-                MySqlParameter idParam = new MySqlParameter("@p_ID", id);
-                idParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(idParam);
-                //Create input parameter (p_Socket) and assign a value (socket)
-                MySqlParameter socketParam = new MySqlParameter("@p_Socket", socket.ToString());
-                socketParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(socketParam);
-
-                try
+                int cmdResult = 0;
+                using (MySqlCommand cmd = new MySqlCommand("StatusUpdate", conn))
                 {
-                    Open();
-                    // Execute SQL command.
-                    cmdResult = cmd.ExecuteNonQuery();
+                    //Set up cmd to reference stored procedure 'StatusUpdate'.
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                    //Create input parameter (p_ID) and assign a value (id)
+                    MySqlParameter idParam = new MySqlParameter("@p_ID", id);
+                    idParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(idParam);
+                    //Create input parameter (p_Socket) and assign a value (socket)
+                    MySqlParameter socketParam = new MySqlParameter("@p_Socket", socket.ToString());
+                    socketParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(socketParam);
+
+                    try
+                    {
+                        conn.Open();
+                        // Execute SQL command.
+                        cmdResult = cmd.ExecuteNonQuery();
+                    }
+                    finally
+                    {
+                        Close(conn);
+                    }
                 }
-                finally
-                {
-                    Close();
-                }
+                return (cmdResult != 0); // cmdResult content the number of affected rows.
             }
-            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
 
         /// <summary>
@@ -694,62 +695,65 @@ namespace ChatTwo_Server
         /// <param name="userId">ID number of the user.</param>
         public static List<int> GetOnlineContacts(int userId)
         {
-            // Should make the ContactsMutual stored procedure only return contacts that are online.
-            // Would make this method faster by only having it make one query. Just not sure how.
-            List<int> contactIds = new List<int>();
-            using (MySqlCommand cmd = new MySqlCommand("ContactsMutual", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                //Set up cmd to reference stored procedure 'ContactsMutual'.
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
+                // Should make the ContactsMutual stored procedure only return contacts that are online.
+                // Would make this method faster by only having it make one query. Just not sure how.
+                List<int> contactIds = new List<int>();
+                using (MySqlCommand cmd = new MySqlCommand("ContactsMutual", conn))
+                {
+                    //Set up cmd to reference stored procedure 'ContactsMutual'.
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
-                //Create input parameter (p_ID) and assign a value (id)
-                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
-                idParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(idParam);
-
-                try
-                {
-                    Open();
-                    // Execute SQL command.
-                    MySqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        contactIds.Add((int)reader["ContactID"]);
-                    }
-                }
-                finally
-                {
-                    Close();
-                }
-            }
-            if (contactIds.Count != 0)
-            {
-                // This is all created in the method, so no chance of SQL injection.
-                string users = String.Join(" OR `ID` = ", contactIds);
-                contactIds.Clear();
-                using (MySqlCommand cmd = new MySqlCommand("SELECT `ID` FROM `Users` WHERE `Online` = 1 AND (`ID` = " + users + ");", _conn))
-                {
+                    //Create input parameter (p_ID) and assign a value (id)
+                    MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                    idParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(idParam);
 
                     try
                     {
-                        Open();
+                        conn.Open();
                         // Execute SQL command.
                         MySqlDataReader reader = cmd.ExecuteReader();
                         while (reader.Read())
                         {
-                            contactIds.Add((int)reader["ID"]);
+                            contactIds.Add((int)reader["ContactID"]);
                         }
                     }
                     finally
                     {
-                        Close();
+                        Close(conn);
                     }
                 }
-                // And finally we have a list of all the contacts that are online and we can message them.
-                return contactIds;
+                if (contactIds.Count != 0)
+                {
+                    // This is all created in the method, so no chance of SQL injection.
+                    string users = String.Join(" OR `ID` = ", contactIds);
+                    contactIds.Clear();
+                    using (MySqlCommand cmd = new MySqlCommand("SELECT `ID` FROM `Users` WHERE `Online` = 1 AND (`ID` = " + users + ");", conn))
+                    {
+
+                        try
+                        {
+                            conn.Open();
+                            // Execute SQL command.
+                            MySqlDataReader reader = cmd.ExecuteReader();
+                            while (reader.Read())
+                            {
+                                contactIds.Add((int)reader["ID"]);
+                            }
+                        }
+                        finally
+                        {
+                            Close(conn);
+                        }
+                    }
+                    // And finally we have a list of all the contacts that are online and we can message them.
+                    return contactIds;
+                }
+                else
+                    return new List<int>();
             }
-            else
-                return new List<int>();
         }
         /// <summary>
         /// Returns a list of all online contacts of the user.
@@ -757,35 +761,38 @@ namespace ChatTwo_Server
         /// <param name="userId">ID number of the user.</param>
         public static Dictionary<int, byte> GetAllContacts(int userId)
         {
-            // Should make the ContactsMutual stored procedure only return contacts that are online.
-            // Would make this method faster by only having it make one query. Just not sure how.
-            Dictionary<int, byte> contacts = new Dictionary<int, byte>();
-            using (MySqlCommand cmd = new MySqlCommand("ContactsAll", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                //Set up cmd to reference stored procedure 'ContactsMutual'.
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
-
-                //Create input parameter (p_ID) and assign a value (id)
-                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
-                idParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(idParam);
-
-                try
+                // Should make the ContactsMutual stored procedure only return contacts that are online.
+                // Would make this method faster by only having it make one query. Just not sure how.
+                Dictionary<int, byte> contacts = new Dictionary<int, byte>();
+                using (MySqlCommand cmd = new MySqlCommand("ContactsAll", conn))
                 {
-                    Open();
-                    // Execute SQL command.
-                    MySqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read())
+                    //Set up cmd to reference stored procedure 'ContactsMutual'.
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
+
+                    //Create input parameter (p_ID) and assign a value (id)
+                    MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                    idParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(idParam);
+
+                    try
                     {
-                        contacts.Add(Convert.ToInt32(reader["ContactID"]), ByteHelper.CreateBitCode(Convert.ToBoolean(reader["FromMe"]), Convert.ToBoolean(reader["ToMe"])));
+                        conn.Open();
+                        // Execute SQL command.
+                        MySqlDataReader reader = cmd.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            contacts.Add(Convert.ToInt32(reader["ContactID"]), ByteHelper.CreateBitCode(Convert.ToBoolean(reader["FromMe"]), Convert.ToBoolean(reader["ToMe"])));
+                        }
+                    }
+                    finally
+                    {
+                        Close(conn);
                     }
                 }
-                finally
-                {
-                    Close();
-                }
+                return contacts;
             }
-            return contacts;
         }
 
         /// <summary>
@@ -795,46 +802,49 @@ namespace ChatTwo_Server
         /// <param name="contactId">ID number of the contact.</param>
         public static bool AddContact(int userId, int contactId)
         {
-            int cmdResult = 0;
-            using (MySqlCommand cmd = new MySqlCommand("ContactsAdd", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                //Set up cmd to reference stored procedure 'StatusUpdate'.
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
-
-                //Create input parameter (p_ID) and assign a value (userId)
-                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
-                idParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(idParam);
-                //Create input parameter (p_ContactID) and assign a value (contactId)
-                MySqlParameter socketParam = new MySqlParameter("@p_ContactID", contactId);
-                socketParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(socketParam);
-
-                try
+                int cmdResult = 0;
+                using (MySqlCommand cmd = new MySqlCommand("ContactsAdd", conn))
                 {
-                    Open();
-                    // Execute SQL command.
+                    //Set up cmd to reference stored procedure 'StatusUpdate'.
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
-                    MySqlDataReader test = cmd.ExecuteReader();
-                    test.Read();
-                    cmdResult = Convert.ToInt32(test["Row_Affected"]);
-                    test.Close();
-                    Global.MainWindow.WriteLog("ContactAdd ExecuteReader result: " + cmdResult.ToString());
+                    //Create input parameter (p_ID) and assign a value (userId)
+                    MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                    idParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(idParam);
+                    //Create input parameter (p_ContactID) and assign a value (contactId)
+                    MySqlParameter socketParam = new MySqlParameter("@p_ContactID", contactId);
+                    socketParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(socketParam);
 
-                    object test2 = cmd.ExecuteScalar();
-                    cmdResult = Convert.ToInt32(test2);
-                    Global.MainWindow.WriteLog("ContactAdd ExecuteScalar result: " + cmdResult.ToString());
+                    try
+                    {
+                        conn.Open();
+                        // Execute SQL command.
 
-                    object test3 = cmd.ExecuteNonQuery();
-                    cmdResult = Convert.ToInt32(test3);
-                    Global.MainWindow.WriteLog("ContactAdd ExecuteNonQuery result: " + cmdResult.ToString());
+                        //MySqlDataReader test = cmd.ExecuteReader();
+                        //test.Read();
+                        //cmdResult = Convert.ToInt32(test["Row_Affected"]);
+                        //test.Close();
+                        //Global.MainWindow.WriteLog("ContactAdd ExecuteReader result: " + cmdResult.ToString());
+
+                        object test2 = cmd.ExecuteScalar();
+                        cmdResult = Convert.ToInt32(test2);
+                        Global.MainWindow.WriteLog("ContactAdd ExecuteScalar result: " + cmdResult.ToString());
+
+                        object test3 = cmd.ExecuteNonQuery();
+                        cmdResult = Convert.ToInt32(test3);
+                        Global.MainWindow.WriteLog("ContactAdd ExecuteNonQuery result: " + cmdResult.ToString());
+                    }
+                    finally
+                    {
+                        Close(conn);
+                    }
                 }
-                finally
-                {
-                    Close();
-                }
+                return (cmdResult != 0); // cmdResult content the number of affected rows.
             }
-            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
 
 
@@ -845,46 +855,49 @@ namespace ChatTwo_Server
         /// <param name="contactId">ID number of the contact.</param>
         public static bool RemoveContact(int userId, int contactId)
         {
-            int cmdResult = 0;
-            using (MySqlCommand cmd = new MySqlCommand("ContactsRemove", _conn))
+            using (MySqlConnection conn = new MySqlConnection(_connString))
             {
-                //Set up cmd to reference stored procedure 'StatusUpdate'.
-                cmd.CommandType = System.Data.CommandType.StoredProcedure;
-
-                //Create input parameter (p_ID) and assign a value (userId)
-                MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
-                idParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(idParam);
-                //Create input parameter (p_ContactID) and assign a value (contactId)
-                MySqlParameter socketParam = new MySqlParameter("@p_ContactID", contactId);
-                socketParam.Direction = System.Data.ParameterDirection.Input;
-                cmd.Parameters.Add(socketParam);
-
-                try
+                int cmdResult = 0;
+                using (MySqlCommand cmd = new MySqlCommand("ContactsRemove", conn))
                 {
-                    Open();
-                    // Execute SQL command.
+                    //Set up cmd to reference stored procedure 'StatusUpdate'.
+                    cmd.CommandType = System.Data.CommandType.StoredProcedure;
 
-                    //MySqlDataReader test = cmd.ExecuteReader();
-                    //test.Read();
-                    //cmdResult = Convert.ToInt32(test["Row_Affected"]);
-                    //test.Close();
-                    //Global.MainWindow.WriteLog("ContactRemove ExecuteReader result: " + cmdResult.ToString());
+                    //Create input parameter (p_ID) and assign a value (userId)
+                    MySqlParameter idParam = new MySqlParameter("@p_ID", userId);
+                    idParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(idParam);
+                    //Create input parameter (p_ContactID) and assign a value (contactId)
+                    MySqlParameter socketParam = new MySqlParameter("@p_ContactID", contactId);
+                    socketParam.Direction = System.Data.ParameterDirection.Input;
+                    cmd.Parameters.Add(socketParam);
 
-                    object test2 = cmd.ExecuteScalar();
-                    cmdResult = Convert.ToInt32(test2);
-                    Global.MainWindow.WriteLog("ContactRemove ExecuteScalar result: " + cmdResult.ToString());
+                    try
+                    {
+                        conn.Open();
+                        // Execute SQL command.
 
-                    object test3 = cmd.ExecuteNonQuery();
-                    cmdResult = Convert.ToInt32(test3);
-                    Global.MainWindow.WriteLog("ContactRemove ExecuteNonQuery result: " + cmdResult.ToString());
+                        //MySqlDataReader test = cmd.ExecuteReader();
+                        //test.Read();
+                        //cmdResult = Convert.ToInt32(test["Row_Affected"]);
+                        //test.Close();
+                        //Global.MainWindow.WriteLog("ContactRemove ExecuteReader result: " + cmdResult.ToString());
+
+                        object test2 = cmd.ExecuteScalar();
+                        cmdResult = Convert.ToInt32(test2);
+                        Global.MainWindow.WriteLog("ContactRemove ExecuteScalar result: " + cmdResult.ToString());
+
+                        object test3 = cmd.ExecuteNonQuery();
+                        cmdResult = Convert.ToInt32(test3);
+                        Global.MainWindow.WriteLog("ContactRemove ExecuteNonQuery result: " + cmdResult.ToString());
+                    }
+                    finally
+                    {
+                        Close(conn);
+                    }
                 }
-                finally
-                {
-                    Close();
-                }
+                return (cmdResult != 0); // cmdResult content the number of affected rows.
             }
-            return (cmdResult != 0); // cmdResult content the number of affected rows.
         }
         #endregion
     }
